@@ -1,0 +1,50 @@
+#version 330 core
+
+in vec2 fragmentTexCoord;
+
+out vec4 fragmentColor;
+
+uniform sampler2D regular_texture;
+uniform sampler2D bright_texture;
+
+const float offset = 0.001;
+
+const vec2 offsets5[25] = vec2[](
+    vec2(-2 * offset, 2 * offset),  vec2(-offset, 2 * offset),  vec2(0.0, 2 * offset),  vec2(offset, 2 * offset),   vec2(2 * offset, 2 * offset),
+    vec2(-2 * offset, offset),      vec2(-offset, offset),      vec2(0.0, offset),      vec2(offset, offset),       vec2(2 * offset, offset),
+    vec2(-2 * offset, 0.0),         vec2(-offset, 0.0),         vec2(0.0, 0.0),         vec2(offset, 0.0),         vec2(2 * offset, 0.0),
+    vec2(-2 * offset, -offset),     vec2(-offset, -offset),     vec2(0.0, -offset),     vec2(offset, -offset),     vec2(2 * offset, -offset),
+    vec2(-2 * offset, -2 * offset), vec2(-offset, -2 * offset), vec2(0.0, -2 * offset), vec2(offset, -2 * offset), vec2(2 * offset, -2 * offset)
+    );
+
+const float blur_kernel5[25] = float[](
+    1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25,
+    1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25,
+    1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25,
+    1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25,
+    1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25
+    );
+
+vec3 kernelEffect5(float kernel[25], sampler2D texture_to_sample);
+
+void main() {
+    //vec4 color = texture(regular_texture, fragmentTexCoord);
+    //vec4 color = texture(bright_texture, fragmentTexCoord);
+    
+    vec4 color = texture(regular_texture, fragmentTexCoord);
+
+    color += vec4(kernelEffect5(blur_kernel5, bright_texture), 0.0);
+    
+    fragmentColor = color;
+}
+
+vec3 kernelEffect5(float kernel[25], sampler2D texture_to_sample) {
+    //sample the pixels at 25 values (pixel neighbours)
+    vec3 sampleTex;
+    vec3 result = vec3(0.0);
+    for (int i = 0; i < 25; i++) {
+        sampleTex = vec3(texture(texture_to_sample, fragmentTexCoord.st + offsets5[i]));
+        result += sampleTex * kernel[i];
+    }
+    return abs(result);
+}

@@ -1,0 +1,13 @@
+#version 330 core
+
+in vec2 fragmentTexCoord;
+
+out vec4 fragmentColor;
+
+uniform sampler2D material;
+uniform vec3 color;
+
+void main() {
+    vec4 sampled = texture(material, vec2(fragmentTexCoord.x, 1-fragmentTexCoord.y));
+    fragmentColor = vec4(color * sampled.rgb, sampled.a);
+}

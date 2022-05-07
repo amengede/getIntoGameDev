@@ -1,0 +1,599 @@
+#version 430
+
+struct Sphere {
+    vec3 center;
+    float radius;
+    float material;
+};
+
+struct Material {
+    vec3 color;
+    vec3 emissive;
+    float gloss;
+    vec3 specular;
+};
+
+struct Camera {
+    vec3 forwards;
+    vec3 up;
+    vec3 right;
+    vec3 position;
+};
+
+struct Ray {
+    vec3 direction;
+    vec3 origin;
+};
+
+struct RenderState {
+    vec3 pos;
+    vec3 normal;
+    float t;
+    Material material;
+    bool hit;
+};
+
+struct Plane{
+    vec3 normal;
+    vec3 center;
+    vec3 tangent;
+    vec3 bitangent;
+    float uMin;
+    float uMax;
+    float vMin;
+    float vMax;
+    float material;
+};
+
+// input/output
+layout(local_size_x = 1, local_size_y = 1) in;
+layout(rgba32f, binding = 0) uniform image2D img_output;
+
+//random noise samples
+layout(rgba32f, binding = 1) readonly uniform image2D randVecSphereTex1;
+layout(rgba32f, binding = 2) readonly uniform image2D randVecSphereTex2;
+layout(rgba32f, binding = 3) readonly uniform image2D randVecSphereTex3;
+layout(rgba32f, binding = 4) readonly uniform image2D randVecSphereTex4;
+
+//object data
+layout(rgba32f, binding = 5) readonly uniform image2D sphereData;
+layout(rgba32f, binding = 6) readonly uniform image2D planeData;
+
+//megatexture
+layout(rgba32f, binding = 7) readonly uniform image2D megaTexture;
+
+uniform Camera viewer;
+uniform mat4 view;
+
+uniform float sphereCount;
+uniform float planeCount;
+
+uniform Material[32] materials;
+
+vec3 rayColor(Ray ray, ivec2 screenPos);
+vec3 rayColor2(Ray ray, ivec2 screenPos);
+vec3 rayColor3(Ray ray, ivec2 screenPos);
+vec3 rayColor4(Ray ray, ivec2 screenPos);
+vec3 rayColorFinal(Ray ray);
+
+RenderState hit(Ray ray, Sphere sphere, float tMin, float tMax, RenderState renderState);
+
+RenderState hit(Ray ray, Plane plane, float tMin, float tMax, RenderState renderState);
+
+void main() {
+
+    // get index in global work group i.e x,y position
+    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+
+    ivec2 dims = imageSize(img_output); // fetch image dimensions
+    float horizontalCoefficient = ((float(pixel_coords.x) * 2 - dims.x) / dims.x);
+    float verticalCoefficient = ((float(pixel_coords.y) * 2 - dims.y) / dims.x);
+
+    Ray ray;
+    ray.origin = vec3(view * vec4(viewer.position,1.0));
+    ray.direction = mat3(view) * viewer.forwards + horizontalCoefficient * mat3(view) * viewer.right + verticalCoefficient * mat3(view) * viewer.up;
+    //Ray ray;
+    //ray.direction = vec3(0,0,-1) + horizontalCoefficient * vec3(1,0,0) + verticalCoefficient * vec3(0,1,0);
+
+    ivec2 noiseCoords = ivec2(mod(pixel_coords.x, 32), mod(pixel_coords.y, 32));
+
+    vec3 pixel = rayColor(ray, noiseCoords);
+    //vec3 pixel = rayColorFinal(ray);
+  
+    // output to a specific pixel in the image
+    imageStore(img_output, pixel_coords, vec4(pixel,1.0));
+}
+
+vec3 rayColor(Ray ray, ivec2 screenPos) {
+
+    vec3 color = vec3(1.0);
+    
+    float nearestHit = 999999999;
+    bool hitSomething = false;
+    RenderState renderState;
+    
+    for (int i = 0; i < sphereCount; i++) {
+
+        Sphere sphere;
+        vec4 attributeChunk = imageLoad(sphereData, ivec2(0,i));
+        sphere.center = vec3(view * vec4(attributeChunk.xyz,1));
+        sphere.radius = attributeChunk.w;
+        attributeChunk = imageLoad(sphereData, ivec2(1,i));
+        sphere.material = attributeChunk.x;
+
+        renderState = hit(ray, sphere, 0.001, nearestHit, renderState);
+
+        if (renderState.hit) {
+            nearestHit = renderState.t;
+            hitSomething = true;
+        }
+    }
+
+    for (int i = 0; i < planeCount; i++) {
+
+        Plane plane;
+        vec4 attributeChunk = imageLoad(planeData, ivec2(0,i));
+        plane.normal = mat3(view) * attributeChunk.xyz;
+        plane.center.x = attributeChunk.w;
+
+        attributeChunk = imageLoad(planeData, ivec2(1,i));
+        plane.center.yz = attributeChunk.xy;
+        plane.center = vec3(view * vec4(plane.center,1.0));
+        plane.tangent.xy = attributeChunk.zw;
+
+        attributeChunk = imageLoad(planeData, ivec2(2,i));
+        plane.tangent.z = attributeChunk.x;
+        plane.tangent = mat3(view) * plane.tangent;
+        plane.bitangent = attributeChunk.yzw;
+        plane.bitangent = mat3(view) * plane.bitangent;
+
+        attributeChunk = imageLoad(planeData, ivec2(3,i));
+        plane.uMin = attributeChunk.x;
+        plane.uMax = attributeChunk.y;
+        plane.vMin = attributeChunk.z;
+        plane.vMax = attributeChunk.w;
+
+        attributeChunk = imageLoad(planeData, ivec2(4,i));
+        plane.material = attributeChunk.x;
+
+        renderState = hit(ray, plane, 0.0001, nearestHit, renderState);
+
+        if (renderState.hit) {
+            nearestHit = renderState.t;
+            hitSomething = true;
+        }
+    }
+        
+    if (hitSomething) {
+
+        Material material = renderState.material;
+
+        vec3 randomVec = imageLoad(randVecSphereTex1, screenPos).rgb;
+
+        //scatter
+        Ray scattered;
+
+        scattered.origin = renderState.pos;
+        scattered.direction = normalize(renderState.normal + 0.5 * randomVec);
+
+        color = material.emissive;
+
+        color += (1.0 - material.gloss) * material.color;
+
+        //reflect
+        Ray reflected;
+
+        reflected.origin = renderState.pos;
+        reflected.direction = normalize(reflect(ray.direction, renderState.normal) + (1.0 - material.gloss) * randomVec);
+
+        color += material.gloss * material.specular * material.color * rayColor2(reflected, screenPos);
+    }
+        
+    return color;
+}
+
+vec3 rayColor2(Ray ray, ivec2 screenPos) {
+
+    vec3 color = vec3(1.0);
+    
+    float nearestHit = 999999999;
+    bool hitSomething = false;
+    RenderState renderState;
+    
+    for (int i = 0; i < sphereCount; i++) {
+
+        Sphere sphere;
+        vec4 attributeChunk = imageLoad(sphereData, ivec2(0,i));
+        sphere.center = vec3(view * vec4(attributeChunk.xyz,1));
+        sphere.radius = attributeChunk.w;
+        attributeChunk = imageLoad(sphereData, ivec2(1,i));
+        sphere.material = attributeChunk.x;
+
+        renderState = hit(ray, sphere, 0.001, nearestHit, renderState);
+
+        if (renderState.hit) {
+            nearestHit = renderState.t;
+            hitSomething = true;
+        }
+    }
+
+    for (int i = 0; i < planeCount; i++) {
+
+        Plane plane;
+        vec4 attributeChunk = imageLoad(planeData, ivec2(0,i));
+        plane.normal = mat3(view) * attributeChunk.xyz;
+        plane.center.x = attributeChunk.w;
+
+        attributeChunk = imageLoad(planeData, ivec2(1,i));
+        plane.center.yz = attributeChunk.xy;
+        plane.center = vec3(view * vec4(plane.center,1.0));
+        plane.tangent.xy = attributeChunk.zw;
+
+        attributeChunk = imageLoad(planeData, ivec2(2,i));
+        plane.tangent.z = attributeChunk.x;
+        plane.tangent = mat3(view) * plane.tangent;
+        plane.bitangent = attributeChunk.yzw;
+        plane.bitangent = mat3(view) * plane.bitangent;
+
+        attributeChunk = imageLoad(planeData, ivec2(3,i));
+        plane.uMin = attributeChunk.x;
+        plane.uMax = attributeChunk.y;
+        plane.vMin = attributeChunk.z;
+        plane.vMax = attributeChunk.w;
+
+        attributeChunk = imageLoad(planeData, ivec2(4,i));
+        plane.material = attributeChunk.x;
+
+        renderState = hit(ray, plane, 0.0001, nearestHit, renderState);
+
+        if (renderState.hit) {
+            nearestHit = renderState.t;
+            hitSomething = true;
+        }
+    }
+        
+    if (hitSomething) {
+
+        Material material = renderState.material;
+
+        vec3 randomVec = imageLoad(randVecSphereTex1, screenPos).rgb;
+
+        //scatter
+        Ray scattered;
+
+        scattered.origin = renderState.pos;
+        scattered.direction = normalize(renderState.normal + 0.5 * randomVec);
+
+        color = material.emissive;
+
+        color += (1.0 - material.gloss) * material.color;
+
+        //reflect
+        Ray reflected;
+
+        reflected.origin = renderState.pos;
+        reflected.direction = normalize(reflect(ray.direction, renderState.normal) + (1.0 - material.gloss) * randomVec);
+
+        color += material.gloss * material.specular * material.color * rayColor3(reflected, screenPos);
+    }
+        
+    return color;
+}
+
+vec3 rayColor3(Ray ray, ivec2 screenPos) {
+
+    vec3 color = vec3(1.0);
+    
+    float nearestHit = 999999999;
+    bool hitSomething = false;
+    RenderState renderState;
+    
+    for (int i = 0; i < sphereCount; i++) {
+
+        Sphere sphere;
+        vec4 attributeChunk = imageLoad(sphereData, ivec2(0,i));
+        sphere.center = vec3(view * vec4(attributeChunk.xyz,1));
+        sphere.radius = attributeChunk.w;
+        attributeChunk = imageLoad(sphereData, ivec2(1,i));
+        sphere.material = attributeChunk.x;
+
+        renderState = hit(ray, sphere, 0.001, nearestHit, renderState);
+
+        if (renderState.hit) {
+            nearestHit = renderState.t;
+            hitSomething = true;
+        }
+    }
+
+    for (int i = 0; i < planeCount; i++) {
+
+        Plane plane;
+        vec4 attributeChunk = imageLoad(planeData, ivec2(0,i));
+        plane.normal = mat3(view) * attributeChunk.xyz;
+        plane.center.x = attributeChunk.w;
+
+        attributeChunk = imageLoad(planeData, ivec2(1,i));
+        plane.center.yz = attributeChunk.xy;
+        plane.center = vec3(view * vec4(plane.center,1.0));
+        plane.tangent.xy = attributeChunk.zw;
+
+        attributeChunk = imageLoad(planeData, ivec2(2,i));
+        plane.tangent.z = attributeChunk.x;
+        plane.tangent = mat3(view) * plane.tangent;
+        plane.bitangent = attributeChunk.yzw;
+        plane.bitangent = mat3(view) * plane.bitangent;
+
+        attributeChunk = imageLoad(planeData, ivec2(3,i));
+        plane.uMin = attributeChunk.x;
+        plane.uMax = attributeChunk.y;
+        plane.vMin = attributeChunk.z;
+        plane.vMax = attributeChunk.w;
+
+        attributeChunk = imageLoad(planeData, ivec2(4,i));
+        plane.material = attributeChunk.x;
+
+        renderState = hit(ray, plane, 0.0001, nearestHit, renderState);
+
+        if (renderState.hit) {
+            nearestHit = renderState.t;
+            hitSomething = true;
+        }
+    }
+        
+    if (hitSomething) {
+
+        Material material = renderState.material;
+
+        vec3 randomVec = imageLoad(randVecSphereTex1, screenPos).rgb;
+
+        //scatter
+        Ray scattered;
+
+        scattered.origin = renderState.pos;
+        scattered.direction = normalize(renderState.normal + 0.5 * randomVec);
+
+        color = material.emissive;
+
+        color += (1.0 - material.gloss) * material.color;
+
+        //reflect
+        Ray reflected;
+
+        reflected.origin = renderState.pos;
+        reflected.direction = normalize(reflect(ray.direction, renderState.normal) + (1.0 - material.gloss) * randomVec);
+
+        color += material.gloss * material.specular * material.color * rayColor4(reflected, screenPos);
+    }
+        
+    return color;
+}
+
+vec3 rayColor4(Ray ray, ivec2 screenPos) {
+
+    vec3 color = vec3(1.0);
+    
+    float nearestHit = 999999999;
+    bool hitSomething = false;
+    RenderState renderState;
+    
+    for (int i = 0; i < sphereCount; i++) {
+
+        Sphere sphere;
+        vec4 attributeChunk = imageLoad(sphereData, ivec2(0,i));
+        sphere.center = vec3(view * vec4(attributeChunk.xyz,1));
+        sphere.radius = attributeChunk.w;
+        attributeChunk = imageLoad(sphereData, ivec2(1,i));
+        sphere.material = attributeChunk.x;
+
+        renderState = hit(ray, sphere, 0.001, nearestHit, renderState);
+
+        if (renderState.hit) {
+            nearestHit = renderState.t;
+            hitSomething = true;
+        }
+    }
+
+    for (int i = 0; i < planeCount; i++) {
+
+        Plane plane;
+        vec4 attributeChunk = imageLoad(planeData, ivec2(0,i));
+        plane.normal = mat3(view) * attributeChunk.xyz;
+        plane.center.x = attributeChunk.w;
+
+        attributeChunk = imageLoad(planeData, ivec2(1,i));
+        plane.center.yz = attributeChunk.xy;
+        plane.center = vec3(view * vec4(plane.center,1.0));
+        plane.tangent.xy = attributeChunk.zw;
+
+        attributeChunk = imageLoad(planeData, ivec2(2,i));
+        plane.tangent.z = attributeChunk.x;
+        plane.tangent = mat3(view) * plane.tangent;
+        plane.bitangent = attributeChunk.yzw;
+        plane.bitangent = mat3(view) * plane.bitangent;
+
+        attributeChunk = imageLoad(planeData, ivec2(3,i));
+        plane.uMin = attributeChunk.x;
+        plane.uMax = attributeChunk.y;
+        plane.vMin = attributeChunk.z;
+        plane.vMax = attributeChunk.w;
+
+        attributeChunk = imageLoad(planeData, ivec2(4,i));
+        plane.material = attributeChunk.x;
+
+        renderState = hit(ray, plane, 0.0001, nearestHit, renderState);
+
+        if (renderState.hit) {
+            nearestHit = renderState.t;
+            hitSomething = true;
+        }
+    }
+        
+    if (hitSomething) {
+
+        Material material = renderState.material;
+
+        vec3 randomVec = imageLoad(randVecSphereTex1, screenPos).rgb;
+
+        //scatter
+        Ray scattered;
+
+        scattered.origin = renderState.pos;
+        scattered.direction = normalize(renderState.normal + 0.5 * randomVec);
+
+        color = material.emissive;
+
+        color += (1.0 - material.gloss) * material.color;
+
+        //reflect
+        Ray reflected;
+
+        reflected.origin = renderState.pos;
+        reflected.direction = normalize(reflect(ray.direction, renderState.normal) + (1.0 - material.gloss) * randomVec);
+
+        color += material.gloss * material.specular * material.color * rayColorFinal(reflected);
+    }
+        
+    return color;
+}
+
+vec3 rayColorFinal(Ray ray) {
+
+    vec3 color = vec3(1.0);
+    
+    float nearestHit = 999999999;
+    bool hitSomething = false;
+    RenderState renderState;
+    
+    for (int i = 0; i < sphereCount; i++) {
+
+        Sphere sphere;
+        vec4 attributeChunk = imageLoad(sphereData, ivec2(0,i));
+        sphere.center = vec3(view * vec4(attributeChunk.xyz,1));
+        sphere.radius = attributeChunk.w;
+        attributeChunk = imageLoad(sphereData, ivec2(1,i));
+        sphere.material = attributeChunk.x;
+
+        renderState = hit(ray, sphere, 0.001, nearestHit, renderState);
+
+        if (renderState.hit) {
+            nearestHit = renderState.t;
+            hitSomething = true;
+        }
+    }
+
+    for (int i = 0; i < planeCount; i++) {
+
+        Plane plane;
+        vec4 attributeChunk = imageLoad(planeData, ivec2(0,i));
+        plane.normal = mat3(view) * attributeChunk.xyz;
+        plane.center.x = attributeChunk.w;
+
+        attributeChunk = imageLoad(planeData, ivec2(1,i));
+        plane.center.yz = attributeChunk.xy;
+        plane.center = vec3(view * vec4(plane.center,1.0));
+        plane.tangent.xy = attributeChunk.zw;
+
+        attributeChunk = imageLoad(planeData, ivec2(2,i));
+        plane.tangent.z = attributeChunk.x;
+        plane.tangent = mat3(view) * plane.tangent;
+        plane.bitangent = attributeChunk.yzw;
+        plane.bitangent = mat3(view) * plane.bitangent;
+
+        attributeChunk = imageLoad(planeData, ivec2(3,i));
+        plane.uMin = attributeChunk.x;
+        plane.uMax = attributeChunk.y;
+        plane.vMin = attributeChunk.z;
+        plane.vMax = attributeChunk.w;
+
+        attributeChunk = imageLoad(planeData, ivec2(4,i));
+        plane.material = attributeChunk.x;
+
+        renderState = hit(ray, plane, 0.0001, nearestHit, renderState);
+
+        if (renderState.hit) {
+            nearestHit = renderState.t;
+            hitSomething = true;
+        }
+    }
+        
+    if (hitSomething) {
+        color = renderState.material.color;
+    }
+        
+    return color;
+}
+
+RenderState hit(Ray ray, Sphere sphere, float tMin, float tMax, RenderState renderState) {
+    vec3 co = ray.origin - sphere.center;
+    float a = dot(ray.direction, ray.direction);
+    float b = 2 * dot(ray.direction, co);
+    float c = dot(co, co) - sphere.radius * sphere.radius;
+    float discriminant = b * b - (4 * a * c);
+    
+    if (discriminant > 0.0) {
+
+        float t = (-b - sqrt(discriminant)) / (2 * a);
+
+        if (t > tMin && t < tMax) {
+            renderState.t = t;
+            int materialIndex = int(sphere.material);
+            renderState.material = materials[materialIndex];
+            renderState.hit = true;
+            renderState.pos = ray.origin + t * ray.direction;
+            renderState.normal = normalize(ray.origin + t * ray.direction - sphere.center);
+            return renderState;
+        }
+    }
+
+    renderState.hit = false;
+    return renderState;
+}
+
+RenderState hit(Ray ray, Plane plane, float tMin, float tMax, RenderState renderState) {
+    
+    float denom = dot(plane.normal, ray.direction); 
+    
+    if (denom < 0.001) {
+
+        float t = dot(plane.center - ray.origin, plane.normal) / denom; 
+
+        if (t > tMin && t < tMax) {
+
+            vec3 testPoint = ray.origin + t * ray.direction;
+            vec3 testDirection = testPoint - plane.center;
+
+            float u = dot(testDirection, plane.tangent);
+            float v = dot(testDirection, plane.bitangent);
+
+            if (u > plane.uMin && u < plane.uMax && v > plane.vMin && v < plane.vMax) {
+
+                u = (u - plane.uMin) / (plane.uMax - plane.uMin);
+                v = (v - plane.vMin) / (plane.vMax - plane.vMin);
+
+                Material material;
+                material.color = imageLoad(megaTexture, ivec2(floor(1024 * u), floor(1024 * (v + plane.material)))).rgb;
+                material.emissive = imageLoad(megaTexture, ivec2(floor(1024 * (u + 1)), floor(1024 * (v + plane.material)))).rgb;
+                material.gloss = imageLoad(megaTexture, ivec2(floor(1024 * (u + 2)), floor(1024 * (v + plane.material)))).r;
+                material.specular = imageLoad(megaTexture, ivec2(floor(1024 * (u + 4)), floor(1024 * (v + plane.material)))).rgb;
+
+                renderState.t = t;
+                renderState.material = material;
+                renderState.hit = true;
+                renderState.pos = testPoint;
+
+                vec3 T = normalize(vec3(view * vec4(plane.tangent, 0)));
+                vec3 B = normalize(vec3(view * vec4(plane.bitangent, 0)));
+                vec3 N = normalize(vec3(view * vec4(plane.normal, 0)));
+                // maps tangent space into view space
+                mat3 TBN = mat3(T, B, N);
+                vec3 normal = imageLoad(megaTexture, ivec2(floor(1024 * (u + 3)), floor(1024 * (v + plane.material)))).rgb;
+                normal = 2.0 * normal - vec3(1.0);
+                renderState.normal = TBN * normal;
+                return renderState;
+            }
+        }
+    }
+
+    renderState.hit = false;
+    return renderState;
+}

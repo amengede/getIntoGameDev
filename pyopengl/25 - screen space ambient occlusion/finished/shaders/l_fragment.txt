@@ -1,0 +1,94 @@
+#version 330 core
+#extension GL_ARB_separate_shader_objects : enable
+#define MAX_LIGHT_COUNT 8
+
+struct GeometryData {
+    sampler2D position;
+    sampler2D albedoSpecular;
+    sampler2D normal;
+    sampler2D ao;
+};
+
+struct Light {
+    vec3 color;
+    float strength;
+};
+
+vec3 CalculatePointLight(Light light, vec3 lightPosition, vec3 cameraPosition, vec3 fragmentPosition, vec3 normal, GeometryData fragment, vec2 texCoord) {
+    vec3 result = vec3(0.0);
+
+    //directions
+	vec3 lightDir = normalize(lightPosition - fragmentPosition);
+    vec3 viewDir = normalize(cameraPosition - fragmentPosition);
+    vec3 halfDir = normalize(lightDir + viewDir);
+
+    vec4 albedoSpecular = texture(fragment.albedoSpecular, texCoord);
+
+    //diffuse
+	result += light.color * max(0.0,dot(normal,lightDir)) * albedoSpecular.rgb;
+	
+    //specular
+    result += light.color * light.strength * pow(max(dot(normal, halfDir), 0.0),32) * albedoSpecular.a;
+    
+    return result;
+}
+
+const float offset = 0.001;
+
+const vec2 offsets5[25] = vec2[](
+    vec2(-2 * offset, 2 * offset),  vec2(-offset, 2 * offset),  vec2(0.0, 2 * offset),  vec2(offset, 2 * offset),   vec2(2 * offset, 2 * offset),
+    vec2(-2 * offset, offset),      vec2(-offset, offset),      vec2(0.0, offset),      vec2(offset, offset),       vec2(2 * offset, offset),
+    vec2(-2 * offset, 0.0),         vec2(-offset, 0.0),         vec2(0.0, 0.0),         vec2(offset, 0.0),         vec2(2 * offset, 0.0),
+    vec2(-2 * offset, -offset),     vec2(-offset, -offset),     vec2(0.0, -offset),     vec2(offset, -offset),     vec2(2 * offset, -offset),
+    vec2(-2 * offset, -2 * offset), vec2(-offset, -2 * offset), vec2(0.0, -2 * offset), vec2(offset, -2 * offset), vec2(2 * offset, -2 * offset)
+    );
+
+const float blur_kernel5[25] = float[](
+    1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25,
+    1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25,
+    1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25,
+    1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25,
+    1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25, 1.0 / 25
+    );
+
+vec3 KernelEffect5(sampler2D texture_to_sample, vec2 coord, float kernel[25]) {
+
+    vec3 sampleTex;
+    vec3 result = vec3(0.0);
+    for (int i = 0; i < 25; i++) {
+        sampleTex = vec3(texture(texture_to_sample, coord + offsets5[i]));
+        result += sampleTex * kernel[i];
+    }
+    return abs(result);
+}
+
+layout (location=0) in vec2 fragmentTexCoord;
+layout (location=1) in vec3 cameraPos;
+layout (location=2) in float fragmentLightCount;
+layout (location=3) in vec3 fragmentLightPos[8];
+
+uniform GeometryData fragmentData;
+uniform Light lights[8];
+uniform vec3 ambient;
+
+layout (location=0) out vec4 color;
+
+void main()
+{
+
+    vec3 fragmentPos = texture(fragmentData.position, fragmentTexCoord).xyz;
+    vec3 fragmentNormal = normalize(2.0 * texture(fragmentData.normal, fragmentTexCoord).xyz - vec3(1.0));
+    float fragmentAo = KernelEffect5(fragmentData.ao, fragmentTexCoord, blur_kernel5).r;
+    
+    //ambient
+    vec3 lightLevel = ambient * texture(fragmentData.albedoSpecular, fragmentTexCoord).rgb * fragmentAo;
+    //vec3 lightLevel = ambient * fragmentAo;
+    
+    for (int i = 0; i < fragmentLightCount; i++) {
+        float distance = length(fragmentLightPos[i] - fragmentPos);
+        lightLevel += CalculatePointLight(lights[i], fragmentLightPos[i], cameraPos, fragmentPos, fragmentNormal, fragmentData, fragmentTexCoord) / distance;
+    }
+    
+
+    color = vec4(lightLevel, 1.0);
+}

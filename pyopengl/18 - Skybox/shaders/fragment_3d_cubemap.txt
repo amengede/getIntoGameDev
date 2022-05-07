@@ -1,0 +1,17 @@
+#version 330 core
+#extension GL_ARB_separate_shader_objects : enable
+
+layout (location=0) in vec3 fragmentColour;
+layout (location=1) in vec3 texCoords;
+
+uniform samplerCube skyBox;
+
+layout (location=0) out vec4 regular_colour;
+layout (location=1) out vec4 bright_colour;
+
+void main()
+{
+    //return pixel colour
+    regular_colour = vec4(fragmentColour * vec3(texture(skyBox, texCoords)), 1.0);
+	bright_colour = vec4(vec3(0.0), 1.0);
+}

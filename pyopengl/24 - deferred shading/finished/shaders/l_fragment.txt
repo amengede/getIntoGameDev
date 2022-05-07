@@ -1,0 +1,65 @@
+#version 330 core
+#extension GL_ARB_separate_shader_objects : enable
+#define MAX_LIGHT_COUNT 8
+
+struct GeometryData {
+    sampler2D position;
+    sampler2D albedoSpecular;
+    sampler2D normalAo;
+};
+
+struct Light {
+    vec3 position;
+    vec3 color;
+    float strength;
+};
+
+vec3 CalculatePointLight(Light light, vec3 cameraPosition, vec3 fragmentPosition, vec3 normal, GeometryData fragment, vec2 texCoord) {
+    vec3 result = vec3(0.0);
+
+    //directions
+	vec3 lightDir = normalize(light.position - fragmentPosition);
+    vec3 viewDir = normalize(cameraPosition - fragmentPosition);
+    vec3 halfDir = normalize(lightDir + viewDir);
+
+    vec4 albedoSpecular = texture(fragment.albedoSpecular, texCoord);
+
+    //diffuse
+	result += light.color * max(0.0,dot(normal,lightDir)) * albedoSpecular.rgb;
+	
+    //specular
+    result += light.color * light.strength * pow(max(dot(normal, halfDir), 0.0),32) * albedoSpecular.a;
+    
+    return result;
+}
+
+layout (location=0) in vec2 fragmentTexCoord;
+
+uniform GeometryData fragmentData;
+uniform Light lights[8];
+uniform vec3 ambient;
+uniform vec3 viewPos;
+uniform float lightCount;
+
+layout (location=0) out vec4 color;
+
+void main()
+{
+    vec3 lightLevel = vec3(0.0);
+
+    vec4 normalAo = texture(fragmentData.normalAo, fragmentTexCoord);
+    vec3 fragmentPos = texture(fragmentData.position, fragmentTexCoord).xyz;
+    vec3 fragmentNormal = normalAo.rgb;
+    float fragmentAo = normalAo.a;
+    
+    //ambient
+    lightLevel += ambient * texture(fragmentData.albedoSpecular, fragmentTexCoord).rgb;
+
+    for (int i = 0; i < lightCount; i++) {
+        float distance = length(lights[i].position - fragmentPos);
+        lightLevel += CalculatePointLight(lights[i], viewPos, fragmentPos, fragmentNormal, fragmentData, fragmentTexCoord) / distance;
+    }
+
+    color = vec4(lightLevel, 1.0) * fragmentAo;
+    //color = vec4(texture(fragmentData.albedoSpecular, fragmentTexCoord).rgb, 1.0);
+}

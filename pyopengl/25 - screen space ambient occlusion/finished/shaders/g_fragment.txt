@@ -1,0 +1,35 @@
+#version 330 core
+#extension GL_ARB_separate_shader_objects : enable
+
+struct Material {
+    sampler2D albedo;
+    sampler2D normal;
+    sampler2D specular;
+};
+
+layout (location=0) in vec3 fragmentPos;
+layout (location=1) in vec2 fragmentTexCoord;
+layout (location=2) in mat3 TBN;
+
+uniform Material material;
+
+layout (location = 0) out vec3 gPosition;
+layout (location = 1) out vec4 gAlbedoSpecular;
+layout (location = 2) out vec3 gNormal;
+
+
+void main()
+{
+    gPosition = fragmentPos;
+    gAlbedoSpecular.rgb = texture(material.albedo, fragmentTexCoord).rgb;
+    gAlbedoSpecular.a = texture(material.specular, fragmentTexCoord).r;
+
+    // 0 to 1
+    vec3 normal = texture(material.normal, fragmentTexCoord).rgb;
+    // -1 to 1
+    normal = 2.0 * normal - vec3(1.0);
+    // to world-space
+    normal = normalize(TBN * normal);
+    // 0 to 1
+    gNormal = (normal + vec3(1.0)) / 2.0;
+}

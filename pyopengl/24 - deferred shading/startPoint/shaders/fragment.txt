@@ -1,0 +1,62 @@
+#version 330 core
+#extension GL_ARB_separate_shader_objects : enable
+#define MAX_LIGHT_COUNT 8
+
+struct Material {
+    sampler2D albedo;
+    sampler2D ao;
+    sampler2D normal;
+    sampler2D specular;
+};
+
+struct Light {
+    vec3 color;
+    float strength;
+};
+
+vec3 CalculatePointLight(Light light, vec3 cameraPosition, vec3 fragmentPosition, vec3 lightPos, vec3 normal, Material fragmentMaterial, vec2 texCoord) {
+    vec3 result = vec3(0.0);
+
+    //directions
+    vec3 norm = normalize(normal);
+	vec3 lightDir = normalize(lightPos - fragmentPosition);
+    vec3 viewDir = normalize(cameraPosition - fragmentPosition);
+    vec3 halfDir = normalize(lightDir + viewDir);
+
+    //diffuse
+	result += light.color * max(0.0,dot(norm,lightDir)) * vec3(texture(fragmentMaterial.albedo, texCoord));
+	
+    //specular
+    result += light.color * light.strength * pow(max(dot(normal, halfDir), 0.0),32) * vec3(texture(fragmentMaterial.specular, texCoord));
+    
+    return result;
+}
+
+layout (location=0) in vec3 fragmentPos;
+layout (location=1) in vec2 fragmentTexCoord;
+layout (location=2) in float fragmentLightCount;
+layout (location=3) in vec3 fragmentViewPos;
+layout (location=4) in vec3 fragmentLightPos[8];
+
+uniform Material material;
+uniform Light lights[MAX_LIGHT_COUNT];
+uniform vec3 ambient;
+
+layout (location=0) out vec4 color;
+
+void main()
+{
+    vec3 lightLevel = vec3(0.0);
+
+    vec3 normal = -normalize(vec3(1.0) - 2.0 * texture(material.normal, fragmentTexCoord).xyz);
+    
+    //ambient
+    lightLevel += ambient * vec3(texture(material.albedo, fragmentTexCoord));
+
+    for (int i = 0; i < fragmentLightCount; i++) {
+        float distance = length(fragmentLightPos[i] - fragmentPos);
+        lightLevel += CalculatePointLight(lights[i], fragmentViewPos, fragmentPos, fragmentLightPos[i], normal, material, fragmentTexCoord) / distance;
+    }
+
+    color = vec4(lightLevel, 1.0) * texture(material.ao, fragmentTexCoord);
+}

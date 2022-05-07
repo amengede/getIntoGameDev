@@ -1,0 +1,29 @@
+#version 330 core
+#extension GL_ARB_separate_shader_objects : enable
+
+layout (location=0) in vec2 vertexPos;
+layout (location=1) in vec2 vertexTexCoord;
+
+uniform mat4 view;
+uniform vec3 viewPos;
+uniform float lightCount;
+uniform vec3 lightPos[8];
+
+layout (location=0) out vec2 fragmentTexCoord;
+layout (location=1) out vec3 cameraPos;
+layout (location=2) out float fragmentLightCount;
+layout (location=3) out vec3 fragmentLightPos[8];
+
+void main()
+{
+    gl_Position = vec4(vertexPos, 0.0, 1.0);
+
+    fragmentTexCoord = vertexTexCoord;
+
+    cameraPos = vec3(view * vec4(viewPos,1.0));
+    fragmentLightCount = lightCount;
+
+    for (int i = 0; i < lightCount; i++) {
+        fragmentLightPos[i] = vec3(view * vec4(lightPos[i], 1.0));
+    }
+}

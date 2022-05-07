@@ -1,0 +1,13 @@
+body{
+    background-color: #00ff99;
+}
+
+#mainCanvas{
+    background-color: black;
+}
+
+.title{
+    font-size: 2rem;
+    background-color: #ff0033;
+    max-width: fit-content;
+}

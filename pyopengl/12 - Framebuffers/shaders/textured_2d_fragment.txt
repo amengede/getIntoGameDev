@@ -1,0 +1,15 @@
+#version 330 core
+
+in vec2 fragmentTexCoord;
+
+out vec4 fragmentColor;
+
+uniform sampler2D material;
+
+void main() {
+    vec4 color = texture(material, fragmentTexCoord);
+    fragmentColor = color;
+    //float averaged = (color.r + color.g + color.b) / 3;
+    //fragmentColor = vec4(averaged, averaged, averaged, 1.0);
+    //fragmentColor = texture(material, fragmentTexCoord);
+}

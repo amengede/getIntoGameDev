@@ -1,0 +1,15 @@
+body{
+    background-color: #00ff99;
+}
+
+#mainCanvas{
+    background-color: black;
+    width: 640px;
+    height: 480px;
+}
+
+.title{
+    font-size: 2rem;
+    background-color: #ff0033;
+    max-width: fit-content;
+}
