@@ -14,19 +14,19 @@ class MegaTexture:
         for i in range(texture_count):
             #load albedo
             image = pg.image.load(f"textures\{filenames[i]}\{filenames[i]}_albedo.png").convert()
-            textureData.blit(image, (0, i * texture_size))
+            textureData.blit(image, (0, (texture_count - i - 1) * texture_size))
             #load emissive
             image = pg.image.load(f"textures\{filenames[i]}\{filenames[i]}_emissive.png").convert()
-            textureData.blit(image, (texture_size, i * texture_size))
+            textureData.blit(image, (texture_size, (texture_count - i - 1) * texture_size))
             #load glossmap
             image = pg.image.load(f"textures\{filenames[i]}\{filenames[i]}_glossiness.png").convert()
-            textureData.blit(image, (2 * texture_size, i * texture_size))
+            textureData.blit(image, (2 * texture_size, (texture_count - i - 1) * texture_size))
             #load normal
             image = pg.image.load(f"textures\{filenames[i]}\{filenames[i]}_normal.png").convert()
-            textureData.blit(image, (3 * texture_size, i * texture_size))
+            textureData.blit(image, (3 * texture_size, (texture_count - i - 1) * texture_size))
             #load specular
             image = pg.image.load(f"textures\{filenames[i]}\{filenames[i]}_specular.png").convert()
-            textureData.blit(image, (4 * texture_size, i * texture_size))
+            textureData.blit(image, (4 * texture_size, (texture_count - i - 1) * texture_size))
         img_data = pg.image.tostring(textureData,"RGBA")
 
 
