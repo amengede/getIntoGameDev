@@ -6,74 +6,82 @@ import pyrr
 import random
 from numba import njit
 
-#cube: [position, eulers, euler_velocity]
+def create_cubes():
 
-#scene_controller: [cubes]
+    cube_positions_raw = []
+    cube_eulers_raw = []
+    cube_euler_velocities_raw = []
+    for i in range(1000):
+        cube_positions_raw.append(
+            np.array(
+                [random.uniform(a = -10, b = 10) for x in range(3)],
+                dtype = np.float32
+            )
+        )
+        cube_eulers_raw.append(
+            np.array(
+                [random.uniform(a = 0, b = 360) for x in range(3)],
+                dtype = np.float32
+            )
+        )
+        cube_euler_velocities_raw.append(
+            np.array(
+                [random.uniform(a = -0.1, b = 0.1) for x in range(3)],
+                dtype=np.float32
+            )
+        )
+    
+    cube_positions = np.array(cube_positions_raw, dtype = np.float32)
+    cube_eulers = np.array(cube_eulers_raw, dtype = np.float32)
+    cube_euler_velocities = np.array(cube_euler_velocities_raw, dtype = np.float32)
+
+    return (cube_positions, cube_eulers, cube_euler_velocities)
 
 @njit
-def update_scene_controller(scene_controller):
+def update_cubes(cube_eulers, cube_euler_velocities, frame_time):
 
-    for cube in range(len(scene_controller[0])):
+    rate = frame_time / 16.0
 
-        scene_controller[0][cube][1] = \
-            scene_controller[0][cube][1] \
-            + scene_controller[0][cube][2]
-        
+    for cube in range(len(cube_eulers)):
+
+        cube_eulers[cube] = cube_eulers[cube] + rate * cube_euler_velocities[cube]
+
         for attribute in range(3):
-            if scene_controller[0][cube][1][attribute] < 0:
-                scene_controller[0][cube][1][attribute] += 360
-            elif scene_controller[0][cube][1][attribute] > 360:
-                scene_controller[0][cube][1][attribute] -= 360
+
+            if cube_eulers[cube][attribute] < 0:
+                cube_eulers[cube][attribute] += 360
+            elif cube_eulers[cube][attribute] > 360:
+                cube_eulers[cube][attribute] -= 360
 
 @njit
-def load_model_transforms(scene_controller, model_transforms):
+def update_model_transforms(cube_positions, cube_eulers, model_transforms):
 
-    i = 0
-    for cube in scene_controller[0]:
-        
-        alpha = cube[1][0]
-        beta = cube[1][1]
-        gamma = cube[1][2]
+    for cube in range(len(cube_positions)):
 
+        alpha = np.radians(cube_eulers[cube][0])
+        beta = np.radians(cube_eulers[cube][1])
+        gamma = np.radians(cube_eulers[cube][2])
         cA = np.cos(alpha)
         sA = np.sin(alpha)
         cB = np.cos(beta)
         sB = np.sin(beta)
         cG = np.cos(gamma)
         sG = np.sin(gamma)
-        x = np.float64(cube[0][0])
-        y = np.float64(cube[0][1])
-        z = np.float64(cube[0][2])
-        
-        
+        x = cube_positions[cube][0]
+        y = cube_positions[cube][1]
+        z = cube_positions[cube][2]
+
         model_transform = np.array(
             [
-                [
-                    cB * cG,
-                    cB * sG,
-                    -sB,
-                    0
-                ],
-                [
-                    sA * sB * cG - cA * sG,
-                    sA * sB * sG + cA * cG,
-                    sA * cB,
-                    0
-                ],
-                [
-                    cA * sB * cG + sA * sG,
-                    cA * sB * sG - sA * cG,
-                    cA * cB,
-                    0
-                ],
+                [cB * cG, cB * sG, -sB, 0.],
+                [sA * sB * cG - cA * sG, sA * sB * sG + cA * cG, sA * cB, 0.],
+                [cA * sB * cG + sA * sG, cA * sB * sG - sA * cG, cA * cB, 0.],
                 [x, y, z, 1.0]
             ],
-            dtype=np.float32
+            dtype = np.float32
         )
         
-        model_transforms[i] = model_transform
-        i += 1
-
+        model_transforms[cube] = model_transform
 
 class App:
 
@@ -83,25 +91,12 @@ class App:
         pg.display.set_mode((640,480), pg.OPENGL|pg.DOUBLEBUF)
         self.clock = pg.time.Clock()
 
-        cubes_raw = []
-        for i in range(1000):
-            cube = [ 
-                np.array(
-                    [random.uniform(a = -10, b = 10) for x in range(3)],
-                    dtype = np.float32
-                ),
-                np.array(
-                    [random.uniform(a = 0, b = 360) for x in range(3)],
-                    dtype = np.float32
-                ),
-                np.array(
-                    [random.uniform(a = -0.1, b = 0.1) for x in range(3)],
-                    dtype=np.float32
-                )
-            ]
-            cubes_raw.append(cube)
-        cubes = np.array(cubes_raw, dtype = np.float32)
-        self.scene = np.array([cubes,], dtype=np.float32)
+        self.lastTime = pg.time.get_ticks()
+        self.currentTime = 0
+        self.numFrames = 0
+        self.frameTime = 0
+
+        (self.cube_positions, self.cube_eulers, self.cube_euler_velocities) = create_cubes()
         #initialise opengl
         glClearColor(0.1, 0.2, 0.2, 1)
         self.shader = self.createShader("shaders/vertex.txt", "shaders/fragment.txt")
@@ -132,14 +127,14 @@ class App:
             1, GL_FALSE, view_transform
         )
 
-        self.cubeTransforms = np.array([
+        self.cube_transforms = np.array([
             pyrr.matrix44.create_identity(dtype = np.float32)
 
-            for i in range(len(self.scene[0]))
+            for i in range(len(self.cube_positions))
         ], dtype=np.float32)
         self.cubeTransformVBO = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, self.cubeTransformVBO)
-        glBufferData(GL_ARRAY_BUFFER, self.cubeTransforms.nbytes, self.cubeTransforms, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, self.cube_transforms.nbytes, self.cube_transforms, GL_STATIC_DRAW)
         
         glBindVertexArray(self.cube_mesh.vao)
         glEnableVertexAttribArray(2)
@@ -179,27 +174,38 @@ class App:
                 if (event.type == pg.QUIT):
                     running = False
             
-            update_scene_controller(self.scene)
+            update_cubes(self.cube_eulers, self.cube_euler_velocities, self.frameTime)
             
             #refresh screen
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             glUseProgram(self.shader)
 
-            load_model_transforms(self.scene, self.cubeTransforms)
-            glBufferData(GL_ARRAY_BUFFER, self.cubeTransforms.nbytes, self.cubeTransforms, GL_STATIC_DRAW)
+            update_model_transforms(self.cube_positions, self.cube_eulers, self.cube_transforms)
+            glBufferData(GL_ARRAY_BUFFER, self.cube_transforms.nbytes, self.cube_transforms, GL_STATIC_DRAW)
             
             
             self.wood_texture.use()
             glBindVertexArray(self.cube_mesh.vao)
-            glDrawArraysInstanced(GL_TRIANGLES, 0, self.cube_mesh.vertex_count, len(self.scene[0]))
+            glDrawArraysInstanced(GL_TRIANGLES, 0, self.cube_mesh.vertex_count, len(self.cube_positions))
 
             pg.display.flip()
 
             #timing
-            self.clock.tick()
-            pg.display.set_caption(f"running at {int(self.clock.get_fps())} fps")
+            self.calculate_framerate()
         self.quit()
 
+    def calculate_framerate(self):
+
+        self.currentTime = pg.time.get_ticks()
+        delta = self.currentTime - self.lastTime
+        if (delta >= 1000):
+            framerate = max(1,int(1000.0 * self.numFrames/delta))
+            pg.display.set_caption(f"Running at {framerate} fps.")
+            self.lastTime = self.currentTime
+            self.numFrames = -1
+            self.frameTime = float(1000.0 / max(1,framerate))
+        self.numFrames += 1
+    
     def quit(self):
         self.wood_texture.destroy()
         glDeleteProgram(self.shader)
