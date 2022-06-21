@@ -1,0 +1,430 @@
+#version 430
+
+struct Sphere {
+    vec3 center;
+    float radius;
+    vec3 color;
+    float roughness;
+};
+
+struct Camera {
+    vec3 position;
+    vec3 forwards;
+    vec3 right;
+    vec3 up;
+};
+
+struct Ray {
+    vec3 origin;
+    vec3 direction;
+};
+
+struct Plane {
+    vec3 center;
+    vec3 tangent;
+    vec3 bitangent;
+    vec3 normal;
+    float uMin;
+    float uMax;
+    float vMin;
+    float vMax;
+    float material;
+};
+
+struct RenderState {
+    float t;
+    vec3 color;
+    vec3 emissive;
+    vec3 position;
+    vec3 normal;
+    bool hit;
+    float roughness;
+};
+
+struct Material {
+    vec3 albedo;
+    vec3 emissive;
+    float gloss;
+    vec3 normal;
+    vec3 specular;
+};
+
+struct Light {
+    vec3 position;
+    vec3 color;
+    float strength;
+};
+
+// input/output
+layout(local_size_x = 1, local_size_y = 1) in;
+layout(rgba32f, binding = 0) uniform image2D img_output;
+
+//Scene data
+uniform Camera viewer;
+layout(rgba32f, binding = 1) readonly uniform image2D objects;
+layout(rgba32f, binding = 2) readonly uniform image2D noise;
+layout(rgba32f, binding = 3) readonly uniform image2D megaTexture;
+layout(rgba32f, binding = 4) readonly uniform image2D G0;
+layout(rgba32f, binding = 5) readonly uniform image2D G1;
+layout(rgba32f, binding = 6) readonly uniform image2D G2;
+layout(rgba32f, binding = 7) readonly uniform image2D G3;
+uniform float sphereCount;
+uniform float planeCount;
+uniform float lightCount;
+
+RenderState trace(Ray ray);
+
+Sphere unpackSphere(int index);
+
+Plane unpackPlane(int index);
+
+Light unpackLight(int index);
+
+RenderState hit(Ray ray, Sphere sphere, float tMin, float tMax, RenderState renderstate);
+
+RenderState hit(Ray ray, Plane plane, float tMin, float tMax, RenderState renderstate);
+
+float distanceTo(Ray ray, Sphere sphere);
+
+float distanceTo(Ray ray, Plane plane);
+
+Material sample_material(float index, float u, float v);
+
+vec3 light_fragment(RenderState renderState);
+
+vec3 first_pass(Ray ray, ivec2 pixel_coords, vec2 screen_size);
+
+RenderState unpackRenderState(ivec2 pixel_coords);
+
+void main() {
+
+    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 screen_size = imageSize(img_output);
+
+    vec3 finalColor = vec3(0.0);
+    
+    float horizontalCoefficient = float(pixel_coords.x);
+    horizontalCoefficient = (horizontalCoefficient * 2 - screen_size.x) / screen_size.x;
+    
+    float verticalCoefficient = float(pixel_coords.y);
+    verticalCoefficient = (verticalCoefficient * 2 - screen_size.y) / screen_size.x;
+
+    Ray ray;
+    ray.origin = viewer.position;
+    ray.direction = viewer.forwards + horizontalCoefficient * viewer.right + verticalCoefficient * viewer.up;
+
+    vec3 pixel = first_pass(ray, pixel_coords, screen_size);
+
+    finalColor += pixel;
+
+    imageStore(img_output, pixel_coords, vec4(finalColor,1.0));
+}
+
+vec3 first_pass(Ray ray, ivec2 pixel_coords, vec2 screen_size) {
+
+    RenderState renderState = unpackRenderState(pixel_coords);
+
+    return renderState.color * light_fragment(renderState) + renderState.emissive;
+}
+
+vec3 light_fragment(RenderState renderState) {
+
+    //ambient
+    vec3 color = vec3(0.2);
+
+    for (int i = int(sphereCount + planeCount); i < planeCount + sphereCount + lightCount; i++) {
+
+        bool blocked = false;
+
+        Light light = unpackLight(i);
+
+        vec3 fragLight = light.position - renderState.position;
+        float distanceToLight = length(fragLight);
+        fragLight = normalize(fragLight);
+        vec3 fragViewer = normalize(viewer.position - renderState.position);
+        vec3 halfway = normalize(fragViewer + fragLight);
+
+        Ray ray;
+        ray.origin = renderState.position;
+        ray.direction = fragLight;
+    
+        for (int i = 0; i < sphereCount; i++) {
+
+            float trialDist = distanceTo(ray, unpackSphere(i));
+
+            if (trialDist < distanceToLight) {
+                blocked = true;
+            }
+        }
+
+        for (int i = int(sphereCount); i < planeCount + sphereCount; i++) {
+        
+            float trialDist = distanceTo(ray, unpackPlane(i));
+        
+            if (trialDist < distanceToLight) {
+                blocked = true;
+            }
+        }
+
+        if (!blocked) {
+            //Apply lighting
+            //diffuse
+            color += light.color * max(0.0, dot(renderState.normal, fragLight)) * light.strength / (distanceToLight * distanceToLight);
+            //specular
+            color += light.color * pow(max(0.0, dot(renderState.normal, halfway)),64) * light.strength / (distanceToLight * distanceToLight);
+        }
+    }
+        
+    return color;
+}
+
+RenderState trace(Ray ray) {
+
+    RenderState renderState;
+    renderState.hit = false;
+    renderState.color = vec3(0.0);
+    
+    float nearestHit = 999999999;
+    
+    for (int i = 0; i < sphereCount; i++) {
+
+        RenderState newRenderState = hit(ray, unpackSphere(i), 0.001, nearestHit, renderState);
+
+        if (newRenderState.hit) {
+            nearestHit = newRenderState.t;
+            renderState = newRenderState;
+        }
+    }
+
+    for (int i = int(sphereCount); i < planeCount + sphereCount; i++) {
+    
+       RenderState newRenderState = hit(ray, unpackPlane(i), 0.001, nearestHit, renderState);
+    
+       if (newRenderState.hit) {
+            nearestHit = newRenderState.t;
+            renderState = newRenderState;
+        }
+    }
+        
+    return renderState;
+}
+
+RenderState hit(Ray ray, Sphere sphere, float tMin, float tMax, RenderState renderState) {
+
+    vec3 co = ray.origin - sphere.center;
+    float a = dot(ray.direction, ray.direction);
+    float b = 2 * dot(ray.direction, co);
+    float c = dot(co, co) - sphere.radius * sphere.radius;
+    float discriminant = b * b - (4 * a * c);
+    
+    if (discriminant > 0.0) {
+
+        float t = (-b - sqrt(discriminant)) / (2 * a);
+
+        if (t > tMin && t < tMax) {
+
+            renderState.position = ray.origin + t * ray.direction;
+            renderState.normal = normalize(renderState.position - sphere.center);
+            renderState.t = t;
+            renderState.color = sphere.color;
+            renderState.roughness = sphere.roughness;
+            renderState.emissive = vec3(0);
+            renderState.hit = true;
+            return renderState;
+        }
+    }
+    renderState.hit = false;
+    return renderState;
+}
+
+RenderState hit(Ray ray, Plane plane, float tMin, float tMax, RenderState renderState) {
+    
+    float denom = dot(plane.normal, ray.direction); 
+    
+    if (denom < 0.000001) {
+
+        float t = dot(plane.center - ray.origin, plane.normal) / denom; 
+
+        if (t > tMin && t < tMax) {
+
+            vec3 testPoint = ray.origin + t * ray.direction;
+            vec3 testDirection = testPoint - plane.center;
+
+            float u = dot(testDirection, plane.tangent);
+            float v = dot(testDirection, plane.bitangent);
+
+            if (u > plane.uMin && u < plane.uMax && v > plane.vMin && v < plane.vMax) {
+
+                u = (u - plane.uMin) / (plane.uMax - plane.uMin);
+                v = (v - plane.vMin) / (plane.vMax - plane.vMin);
+
+                Material material = sample_material(plane.material, u, v);
+
+                renderState.position = testPoint;
+                renderState.t = t;
+                renderState.color = material.albedo;
+                renderState.emissive = material.emissive;
+                renderState.roughness = max(0, 1.0 - material.gloss);
+
+                // maps tangent space into world space
+                mat3 TBN = mat3(plane.tangent, plane.bitangent, plane.normal);
+                renderState.normal = TBN * material.normal;
+                renderState.hit = true;
+                return renderState;
+            }
+        }
+    }
+    renderState.hit = false;
+    return renderState;
+}
+
+float distanceTo(Ray ray, Sphere sphere) {
+
+    vec3 co = ray.origin - sphere.center;
+    float a = dot(ray.direction, ray.direction);
+    float b = 2 * dot(ray.direction, co);
+    float c = dot(co, co) - sphere.radius * sphere.radius;
+    float discriminant = b * b - (4 * a * c);
+    
+    if (discriminant > 0.0) {
+
+        float t = (-b - sqrt(discriminant)) / (2 * a);
+
+        if (t < 0.0001) {
+            return 9999;
+        }
+
+        return length(t * ray.direction);
+    }
+
+    return 99999;
+}
+
+float distanceTo(Ray ray, Plane plane) {
+    
+    float denom = dot(plane.normal, ray.direction); 
+    
+    if (denom < 0.000001) {
+
+        float t = dot(plane.center - ray.origin, plane.normal) / denom; 
+
+        if (t < 0.0001) {
+            return 9999;
+        }
+
+        vec3 testPoint = ray.origin + t * ray.direction;
+        vec3 testDirection = testPoint - plane.center;
+
+        float u = dot(testDirection, plane.tangent);
+        float v = dot(testDirection, plane.bitangent);
+
+        if (u > plane.uMin && u < plane.uMax && v > plane.vMin && v < plane.vMax) {
+            return length(t * ray.direction);
+        }
+    }
+    return 9999;
+}
+
+Sphere unpackSphere(int index) {
+
+    // sphere: (cx cy cz r) (r g b roughness) (- - - -) (- - - -) (- - - -)
+
+    Sphere sphere;
+    vec4 attributeChunk = imageLoad(objects, ivec2(0,index));
+    sphere.center = attributeChunk.xyz;
+    sphere.radius = attributeChunk.w;
+    
+    attributeChunk = imageLoad(objects, ivec2(1,index));
+    sphere.color = attributeChunk.xyz;
+    sphere.roughness = attributeChunk.w;
+
+    return sphere;
+}
+
+Plane unpackPlane(int index) {
+
+    // plane: (cx cy cz tx) (ty tz bx by) (bz nx ny nz) (umin umax vmin vmax) (r g b roughness)
+
+    Plane plane;
+    vec4 attributeChunk = imageLoad(objects, ivec2(0,index));
+    plane.center = attributeChunk.xyz;
+    plane.tangent.x = attributeChunk.w;
+    
+    attributeChunk = imageLoad(objects, ivec2(1,index));
+    plane.tangent.yz = attributeChunk.xy;
+    plane.bitangent.xy = attributeChunk.zw;
+
+    attributeChunk = imageLoad(objects, ivec2(2,index));
+    plane.bitangent.z = attributeChunk.x;
+    plane.normal = attributeChunk.yzw;
+
+    attributeChunk = imageLoad(objects, ivec2(3,index));
+    plane.uMin = attributeChunk.x;
+    plane.uMax = attributeChunk.y;
+    plane.vMin = attributeChunk.z;
+    plane.vMax = attributeChunk.w;
+
+    attributeChunk = imageLoad(objects, ivec2(4,index));
+    plane.material = attributeChunk.x;
+
+    return plane;
+}
+
+Light unpackLight(int index) {
+
+    // light: (x y z s) (r g b -) (- - - -) (- - - -) (- - - -)
+
+    Light light;
+    vec4 attributeChunk = imageLoad(objects, ivec2(0,index));
+    light.position = attributeChunk.xyz;
+    light.strength = attributeChunk.w;
+    
+    attributeChunk = imageLoad(objects, ivec2(1,index));
+    light.color = attributeChunk.xyz;
+
+    return light;
+}
+
+RenderState unpackRenderState(ivec2 pixel_coords) {
+    // renderState: 
+    //              G0: (rs.color rs.color rs.color rs.em) 
+    //              G1: (rs.em rs.em rs.pos rs.pos) 
+    //              G2: (rs.pos rs.norm rs.norm rs.norm) 
+    //              G3: (rs.roughness - - -)
+
+    RenderState renderState;
+    renderState.t = 0.0;
+    renderState.hit = true;
+
+    vec4 attributeChunk = imageLoad(G0, pixel_coords);
+    renderState.color = attributeChunk.xyz;
+    renderState.emissive.x = attributeChunk.w;
+    
+    attributeChunk = imageLoad(G1, pixel_coords);
+    renderState.emissive.yz = attributeChunk.xy;
+    renderState.position.xy = attributeChunk.zw;
+
+    attributeChunk = imageLoad(G2, pixel_coords);
+    renderState.position.z = attributeChunk.x;
+    renderState.normal = attributeChunk.yzw;
+    renderState.normal = 2.0 * renderState.normal - vec3(1.0);
+
+    attributeChunk = imageLoad(G3, pixel_coords);
+    renderState.roughness = attributeChunk.x;
+
+    return renderState;
+}
+
+Material sample_material(float index, float u, float v) {
+
+    Material material;
+
+    material.albedo = imageLoad(megaTexture, ivec2(floor(1024 * u), floor(1024 * (9 - v - index)))).rgb;
+    material.emissive = imageLoad(megaTexture, ivec2(floor(1024 * (u + 1)), floor(1024 * (9 - v - index)))).rgb;
+    material.gloss = imageLoad(megaTexture, ivec2(floor(1024 * (u + 2)), floor(1024 * (9 - v - index)))).r;
+    material.normal = imageLoad(megaTexture, ivec2(floor(1024 * (u + 3)), floor(1024 * (9 - v - index)))).rgb;
+    material.normal = 2.0 * material.normal - vec3(1.0); 
+    material.specular = imageLoad(megaTexture, ivec2(floor(1024 * (u + 4)), floor(1024 * (9 - v - index)))).rgb;
+
+    return material;
+}
