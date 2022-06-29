@@ -1,0 +1,13 @@
+#version 330 core
+
+in vec2 fragmentTexCoord;
+
+uniform vec4 tint;
+
+out vec4 fragmentColor;
+
+uniform sampler2D material;
+
+void main() {
+    fragmentColor = tint * texture(material, fragmentTexCoord);
+}
