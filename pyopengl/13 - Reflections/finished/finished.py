@@ -154,7 +154,7 @@ class Reflector:
         self.eulers = np.array(eulers, dtype=np.float32)
         self.modelTransform = pyrr.matrix44.create_identity(dtype=np.float32)
     
-    def update(self):
+    def update(self, camera_pos):
         
         self.modelTransform = pyrr.matrix44.create_identity(dtype=np.float32)
         self.modelTransform = pyrr.matrix44.multiply(
@@ -182,6 +182,8 @@ class Reflector:
             ],
             dtype = np.float32
         )
+        incident_direction = self.position - camera_pos
+        self.forwards = pyrr.vector.normalize(incident_direction - 2 * np.dot(incident_direction, self.forwards) * self.forwards)
 
         globalUp = np.array([0,0,1], dtype=np.float32)
 
@@ -264,7 +266,7 @@ class Scene:
             container.update()
 
         for mirror in self.mirrors:
-            mirror.update()
+            mirror.update(self.player.position)
         
         self.player.update_vectors()
     
