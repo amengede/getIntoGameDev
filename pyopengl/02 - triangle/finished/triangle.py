@@ -43,7 +43,6 @@ class App:
             #refresh screen
             glClear(GL_COLOR_BUFFER_BIT)
 
-            glUseProgram(self.shader)
             glBindVertexArray(self.triangle.vao)
             glUseProgram(self.shader)
             glDrawArrays(GL_TRIANGLES, 0, self.triangle.vertex_count)
