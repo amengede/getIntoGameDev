@@ -24,13 +24,13 @@ class App:
         self.clock = pg.time.Clock()
         #initialise opengl
         glClearColor(0.1, 0.2, 0.2, 1)
+        self.cube_mesh = CubeMesh()
         self.shader = self.createShader("shaders/vertex.txt", "shaders/fragment.txt")
         glUseProgram(self.shader)
         glUniform1i(glGetUniformLocation(self.shader, "imageTexture"), 0)
         glEnable(GL_DEPTH_TEST)
 
         self.wood_texture = Material("gfx/wood.jpeg")
-        self.cube_mesh = CubeMesh()
 
         self.cube = Cube(
             position = [0,0,-3],
