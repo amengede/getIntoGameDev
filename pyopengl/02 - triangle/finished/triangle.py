@@ -15,9 +15,9 @@ class App:
         self.clock = pg.time.Clock()
         #initialise opengl
         glClearColor(0.1, 0.2, 0.2, 1)
+        self.triangle = Triangle()
         self.shader = self.createShader("shaders/vertex.txt", "shaders/fragment.txt")
         glUseProgram(self.shader)
-        self.triangle = Triangle(self.shader)
         self.mainLoop()
     
     def createShader(self, vertexFilepath, fragmentFilepath):
@@ -43,8 +43,8 @@ class App:
             #refresh screen
             glClear(GL_COLOR_BUFFER_BIT)
 
-            glUseProgram(self.shader)
             glBindVertexArray(self.triangle.vao)
+            glUseProgram(self.shader)
             glDrawArrays(GL_TRIANGLES, 0, self.triangle.vertex_count)
 
             pg.display.flip()
@@ -61,9 +61,9 @@ class App:
 class Triangle:
 
 
-    def __init__(self, shader):
+    def __init__(self):
 
-        
+
         # x, y, z, r, g, b
         self.vertices = (
             -0.5, -0.5, 0.0, 1.0, 0.0, 0.0,
