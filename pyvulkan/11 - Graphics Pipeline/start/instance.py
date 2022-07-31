@@ -20,10 +20,10 @@ def supported(extensions, layers, debug):
         if extension in supportedExtensions:
             if debug:
                 print(f"Extension \"{extension}\" is supported!")
-            else:
-                if debug:
-                    print(f"Extension \"{extension}\" is not supported!")
-                return False
+        else:
+            if debug:
+                print(f"Extension \"{extension}\" is not supported!")
+            return False
 
     #check layer support
     supportedLayers = [layer.layerName for layer in vkEnumerateInstanceLayerProperties()]
@@ -37,10 +37,10 @@ def supported(extensions, layers, debug):
         if layer in supportedLayers:
             if debug:
                 print(f"Layer \"{layer}\" is supported!")
-            else:
-                if debug:
-                    print(f"Layer \"{layer}\" is not supported!")
-                return False
+        else:
+            if debug:
+                print(f"Layer \"{layer}\" is not supported!")
+            return False
 
     return True
 
