@@ -139,7 +139,7 @@ class App:
         self.currentTime = 0
         self.numFrames = 0
         self.frameTime = 0
-        self.lightCount = 0
+
         #initialise pygame
         pg.init()
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
@@ -202,7 +202,7 @@ class App:
             pg.display.set_caption(f"Running at {framerate} fps.")
             self.lastTime = self.currentTime
             self.numFrames = -1
-            self.frameTime = float(1000.0 / framerate)
+            self.frameTime = float(1000.0 / max(framerate,1))
         self.numFrames += 1
     
     def quit(self):
@@ -222,6 +222,41 @@ class Engine:
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_CULL_FACE)
         glCullFace(GL_BACK)
+
+        #create assets
+        self.wood_texture = Material("crate", "png")
+        self.cube_mesh = ObjMesh("models/cube.obj")
+        #generate position buffer
+        self.cubeTransforms = np.array([
+            pyrr.matrix44.create_identity(dtype = np.float32)
+
+            for i in range(len(scene.cubes))
+        ], dtype=np.float32)
+        glBindVertexArray(self.cube_mesh.vao)
+        self.cubeTransformVBO = glGenBuffers(1)
+        glBindBuffer(
+            GL_ARRAY_BUFFER, 
+            self.cubeTransformVBO
+        )
+        glBufferData(
+            GL_ARRAY_BUFFER, 
+            self.cubeTransforms.nbytes, 
+            self.cubeTransforms, 
+            GL_STATIC_DRAW
+        )
+        glEnableVertexAttribArray(5)
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(6)
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(16))
+        glEnableVertexAttribArray(7)
+        glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32))
+        glEnableVertexAttribArray(8)
+        glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48))
+        glVertexAttribDivisor(5,1)
+        glVertexAttribDivisor(6,1)
+        glVertexAttribDivisor(7,1)
+        glVertexAttribDivisor(8,1)
+
         self.shaderTextured = self.createShader(
             "shaders/vertex.txt", 
             "shaders/fragment.txt"
@@ -307,39 +342,6 @@ class Engine:
                 self.shaderTextured, "material.specular"
             ), 3
         )
-        #create assets
-        self.wood_texture = Material("crate", "png")
-        self.cube_mesh = ObjMesh("models/cube.obj")
-        #generate position buffer
-        self.cubeTransforms = np.array([
-            pyrr.matrix44.create_identity(dtype = np.float32)
-
-            for i in range(len(scene.cubes))
-        ], dtype=np.float32)
-        glBindVertexArray(self.cube_mesh.vao)
-        self.cubeTransformVBO = glGenBuffers(1)
-        glBindBuffer(
-            GL_ARRAY_BUFFER, 
-            self.cubeTransformVBO
-        )
-        glBufferData(
-            GL_ARRAY_BUFFER, 
-            self.cubeTransforms.nbytes, 
-            self.cubeTransforms, 
-            GL_STATIC_DRAW
-        )
-        glEnableVertexAttribArray(5)
-        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(6)
-        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(16))
-        glEnableVertexAttribArray(7)
-        glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32))
-        glEnableVertexAttribArray(8)
-        glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48))
-        glVertexAttribDivisor(5,1)
-        glVertexAttribDivisor(6,1)
-        glVertexAttribDivisor(7,1)
-        glVertexAttribDivisor(8,1)
 
         glUseProgram(self.shaderColored)
         #get shader locations
@@ -461,7 +463,7 @@ class Material:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        image = pg.image.load(f"gfx\{filename}_albedo.{filetype}").convert()
+        image = pg.image.load(f"gfx/{filename}_albedo.{filetype}").convert()
         image_width,image_height = image.get_rect().size
         img_data = pg.image.tostring(image,'RGBA')
         glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
@@ -474,7 +476,7 @@ class Material:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        image = pg.image.load(f"gfx\{filename}_ao.{filetype}").convert()
+        image = pg.image.load(f"gfx/{filename}_ao.{filetype}").convert()
         image_width,image_height = image.get_rect().size
         img_data = pg.image.tostring(image,'RGBA')
         glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
@@ -487,7 +489,7 @@ class Material:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        image = pg.image.load(f"gfx\{filename}_normal.{filetype}").convert()
+        image = pg.image.load(f"gfx/{filename}_normal.{filetype}").convert()
         image_width,image_height = image.get_rect().size
         img_data = pg.image.tostring(image,'RGBA')
         glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
@@ -500,7 +502,7 @@ class Material:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        image = pg.image.load(f"gfx\{filename}_normal.{filetype}").convert()
+        image = pg.image.load(f"gfx/{filename}_normal.{filetype}").convert()
         image_width,image_height = image.get_rect().size
         img_data = pg.image.tostring(image,'RGBA')
         glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)

@@ -130,7 +130,6 @@ class App:
         self.currentTime = 0
         self.numFrames = 0
         self.frameTime = 0
-        self.lightCount = 0
 
         self.mainLoop()
 
@@ -249,6 +248,14 @@ class GraphicsEngine:
         pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK,
                                     pg.GL_CONTEXT_PROFILE_CORE)
         pg.display.set_mode((640,480), pg.OPENGL|pg.DOUBLEBUF)
+
+        self.wood_texture = Material("gfx/wood.jpeg")
+        self.cube_mesh = Mesh("models/cube.obj")
+        self.medkit_texture = Material("gfx/medkit.png")
+        self.medkit_billboard = BillBoard(w = 0.6, h = 0.5)
+        self.light_texture = Material("gfx/greenlight.png")
+        self.light_billboard = BillBoard(w = 0.2, h = 0.2)
+        
         #initialise opengl
         glClearColor(0.0, 0.0, 0.0, 1)
         self.shader = self.createShader("shaders/vertex.txt", "shaders/fragment.txt")
@@ -257,13 +264,6 @@ class GraphicsEngine:
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
-
-        self.wood_texture = Material("gfx/wood.jpeg")
-        self.cube_mesh = Mesh("models/cube.obj")
-        self.medkit_texture = Material("gfx/medkit.png")
-        self.medkit_billboard = BillBoard(w = 0.6, h = 0.5)
-        self.light_texture = Material("gfx/greenlight.png")
-        self.light_billboard = BillBoard(w = 0.2, h = 0.2)
 
         projection_transform = pyrr.matrix44.create_perspective_projection(
             fovy = 45, aspect = 640/480, 

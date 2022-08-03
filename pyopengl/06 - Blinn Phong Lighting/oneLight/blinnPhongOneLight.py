@@ -113,7 +113,6 @@ class App:
         self.currentTime = 0
         self.numFrames = 0
         self.frameTime = 0
-        self.lightCount = 0
 
         self.mainLoop()
 
@@ -232,15 +231,16 @@ class GraphicsEngine:
         pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK,
                                     pg.GL_CONTEXT_PROFILE_CORE)
         pg.display.set_mode((640,480), pg.OPENGL|pg.DOUBLEBUF)
+
+        self.wood_texture = Material("gfx/wood.jpeg")
+        self.cube_mesh = Mesh("models/cube.obj")
+        
         #initialise opengl
         glClearColor(0.0, 0.0, 0.0, 1)
         self.shader = self.createShader("shaders/vertex.txt", "shaders/fragment.txt")
         glUseProgram(self.shader)
         glUniform1i(glGetUniformLocation(self.shader, "imageTexture"), 0)
         glEnable(GL_DEPTH_TEST)
-
-        self.wood_texture = Material("gfx/wood.jpeg")
-        self.cube_mesh = Mesh("models/cube.obj")
 
         projection_transform = pyrr.matrix44.create_perspective_projection(
             fovy = 45, aspect = 640/480, 

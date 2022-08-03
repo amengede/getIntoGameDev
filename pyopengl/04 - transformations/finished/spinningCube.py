@@ -22,9 +22,12 @@ class App:
                                     pg.GL_CONTEXT_PROFILE_CORE)
         pg.display.set_mode((640,480), pg.OPENGL|pg.DOUBLEBUF)
         self.clock = pg.time.Clock()
+
+        self.cube_mesh = CubeMesh()
+
         #initialise opengl
         glClearColor(0.1, 0.2, 0.2, 1)
-        self.cube_mesh = CubeMesh()
+        
         self.shader = self.createShader("shaders/vertex.txt", "shaders/fragment.txt")
         glUseProgram(self.shader)
         glUniform1i(glGetUniformLocation(self.shader, "imageTexture"), 0)
@@ -108,7 +111,7 @@ class App:
         self.quit()
 
     def quit(self):
-        self.cube.destroy()
+        self.cube_mesh.destroy()
         self.wood_texture.destroy()
         glDeleteProgram(self.shader)
         pg.quit()

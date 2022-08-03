@@ -139,7 +139,7 @@ class App:
         self.currentTime = 0
         self.numFrames = 0
         self.frameTime = 0
-        self.lightCount = 0
+        
         #initialise pygame
         pg.init()
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
@@ -220,6 +220,41 @@ class Engine:
         #initialise opengl
         glClearColor(0.1, 0.1, 0.1, 1)
         glEnable(GL_DEPTH_TEST)
+
+        #create assets
+        self.wood_texture = Material("gfx/crate")
+        self.cube_mesh = ObjMesh("models/cube.obj")
+        #generate position buffer
+        self.cubeTransforms = np.array([
+            pyrr.matrix44.create_identity(dtype = np.float32)
+
+            for i in range(len(scene.cubes))
+        ], dtype=np.float32)
+        glBindVertexArray(self.cube_mesh.vao)
+        self.cubeTransformVBO = glGenBuffers(1)
+        glBindBuffer(
+            GL_ARRAY_BUFFER, 
+            self.cubeTransformVBO
+        )
+        glBufferData(
+            GL_ARRAY_BUFFER, 
+            self.cubeTransforms.nbytes, 
+            self.cubeTransforms, 
+            GL_STATIC_DRAW
+        )
+        glEnableVertexAttribArray(3)
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(4)
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(16))
+        glEnableVertexAttribArray(5)
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32))
+        glEnableVertexAttribArray(6)
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48))
+        glVertexAttribDivisor(3,1)
+        glVertexAttribDivisor(4,1)
+        glVertexAttribDivisor(5,1)
+        glVertexAttribDivisor(6,1)
+
         self.shaderTextured = self.createShader(
             "shaders/vertex.txt", 
             "shaders/fragment.txt"
@@ -296,39 +331,6 @@ class Engine:
                 self.shaderTextured, "material.specular"
             ), 1
         )
-        #create assets
-        self.wood_texture = Material("gfx/crate")
-        self.cube_mesh = ObjMesh("models/cube.obj")
-        #generate position buffer
-        self.cubeTransforms = np.array([
-            pyrr.matrix44.create_identity(dtype = np.float32)
-
-            for i in range(len(scene.cubes))
-        ], dtype=np.float32)
-        glBindVertexArray(self.cube_mesh.vao)
-        self.cubeTransformVBO = glGenBuffers(1)
-        glBindBuffer(
-            GL_ARRAY_BUFFER, 
-            self.cubeTransformVBO
-        )
-        glBufferData(
-            GL_ARRAY_BUFFER, 
-            self.cubeTransforms.nbytes, 
-            self.cubeTransforms, 
-            GL_STATIC_DRAW
-        )
-        glEnableVertexAttribArray(3)
-        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(4)
-        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(16))
-        glEnableVertexAttribArray(5)
-        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32))
-        glEnableVertexAttribArray(6)
-        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48))
-        glVertexAttribDivisor(3,1)
-        glVertexAttribDivisor(4,1)
-        glVertexAttribDivisor(5,1)
-        glVertexAttribDivisor(6,1)
 
         glUseProgram(self.shaderColored)
         #get shader locations
@@ -382,16 +384,14 @@ class Engine:
             self.viewLocTextured, 1, GL_FALSE, view_transform
         )
         glUniform3fv(self.cameraLocTextured, 1, scene.player.position)
-        i = 0
-        for light in scene.lights:
+        
+        for i,light in enumerate(scene.lights):
             glUniform3fv(self.lightLocTextured["pos"][i], 1, light.position)
             glUniform3fv(self.lightLocTextured["color"][i], 1, light.color)
             glUniform1f(self.lightLocTextured["strength"][i], 1)
             glUniform1i(self.lightLocTextured["enabled"][i], 1)
-            i += 1
         
-        i = 0
-        for cube in scene.cubes:
+        for i,cube in enumerate(scene.cubes):
             model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
             model_transform = pyrr.matrix44.multiply(
                 m1=model_transform, 
@@ -406,7 +406,7 @@ class Engine:
                 )
             )
             self.cubeTransforms[i] = model_transform
-            i += 1
+        
         glBindVertexArray(self.cube_mesh.vao)
         glBindBuffer(
             GL_ARRAY_BUFFER, 
