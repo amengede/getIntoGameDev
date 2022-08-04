@@ -305,7 +305,6 @@ class App:
         self.currentTime = 0
         self.numFrames = 0
         self.frameTime = 0
-        self.lightCount = 0
 
         self.mainLoop()
 
@@ -439,11 +438,11 @@ class GraphicsEngine:
 
         self.create_framebuffers()
 
+        self.create_assets()
+
         self.setup_shaders()
 
         self.query_shader_locations()
-
-        self.create_assets()
     
     def create_framebuffers(self):
         self.fbos = []
@@ -546,7 +545,6 @@ class GraphicsEngine:
 
     def create_assets(self):
 
-        glUseProgram(self.lighting_shader)
         self.wood_texture = AdvancedMaterial("wood")
         self.cube_mesh = Mesh("models/cube.obj")
         self.medkit_texture = AdvancedMaterial("medkit")
@@ -554,7 +552,6 @@ class GraphicsEngine:
         self.container_mesh = Mesh("models/container.obj")
         self.monkey_mesh = Mesh("models/monkey.obj")
 
-        glUseProgram(self.unlit_shader)
         self.light_texture = Material("gfx/greenlight.png")
         self.light_billboard = BillBoard(w = 0.2, h = 0.1)
         self.mirror_mesh = BillBoard(w = 2.0, h = 2.0)

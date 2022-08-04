@@ -13,11 +13,11 @@ class App:
                                     pg.GL_CONTEXT_PROFILE_CORE)
         pg.display.set_mode((640,480), pg.OPENGL|pg.DOUBLEBUF)
         self.clock = pg.time.Clock()
+        self.triangle = Triangle()
         #initialise opengl
         glClearColor(0.1, 0.2, 0.2, 1)
         self.shader = self.createShader("shaders/vertex.txt", "shaders/fragment.txt")
         glUseProgram(self.shader)
-        self.triangle = Triangle(self.shader)
         self.mainLoop()
     
     def createShader(self, vertexFilepath, fragmentFilepath):
@@ -61,7 +61,7 @@ class App:
 class Triangle:
 
 
-    def __init__(self, shader):
+    def __init__(self):
 
         
         # x, y, z, r, g, b

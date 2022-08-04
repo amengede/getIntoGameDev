@@ -14,6 +14,9 @@ class App:
         pg.display.set_mode((640,480), pg.OPENGL|pg.DOUBLEBUF)
         self.clock = pg.time.Clock()
 
+        self.wood_texture = Material("gfx/cat.png")
+        self.triangle = Triangle()
+
         #initialise opengl
         glClearColor(0.1, 0.2, 0.2, 1)
         glEnable(GL_BLEND)
@@ -22,8 +25,7 @@ class App:
         self.shader = self.createShader("shaders/vertex.txt", "shaders/fragment.txt")
         glUseProgram(self.shader)
         glUniform1i(glGetUniformLocation(self.shader, "imageTexture"), 0)
-        self.wood_texture = Material("gfx/cat.png")
-        self.triangle = Triangle()
+        
         self.mainLoop()
 
     def createShader(self, vertexFilepath, fragmentFilepath):

@@ -41,7 +41,7 @@ uniform Light lights[MAX_LIGHT_COUNT];
 uniform vec3 cameraPos;
 uniform vec3 ambient;
 
-layout (location=0) out vec4 colour;
+layout (location=0) out vec4 color;
 
 void main()
 {
@@ -57,5 +57,5 @@ void main()
         }
     }
 
-    colour = vec4(lightLevel, 1.0);
+    color = vec4(lightLevel, 1.0);
 }

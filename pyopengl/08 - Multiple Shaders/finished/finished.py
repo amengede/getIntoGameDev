@@ -130,7 +130,6 @@ class App:
         self.currentTime = 0
         self.numFrames = 0
         self.frameTime = 0
-        self.lightCount = 0
 
         self.mainLoop()
 
@@ -256,18 +255,19 @@ class GraphicsEngine:
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-        #create renderpasses and resources
-        shader = self.createShader("shaders/vertex.txt", "shaders/fragment.txt")
-        self.texturedLitPass = RenderPassTexturedLit3D(shader)
+        #create assets
         self.wood_texture = Material("gfx/wood.jpeg")
         self.cube_mesh = Mesh("models/cube.obj")
         self.medkit_texture = Material("gfx/medkit.png")
         self.medkit_billboard = BillBoard(w = 0.6, h = 0.5)
-
-        shader = self.createShader("shaders/vertex_light.txt", "shaders/fragment_light.txt")
-        self.texturedPass = RenderPassTextured3D(shader)
         self.light_texture = Material("gfx/greenlight.png")
         self.light_billboard = BillBoard(w = 0.2, h = 0.1)
+
+        #create renderpasses
+        shader = self.createShader("shaders/vertex.txt", "shaders/fragment.txt")
+        self.texturedLitPass = RenderPassTexturedLit3D(shader)
+        shader = self.createShader("shaders/vertex_light.txt", "shaders/fragment_light.txt")
+        self.texturedPass = RenderPassTextured3D(shader)
     
     def createShader(self, vertexFilepath, fragmentFilepath):
 
