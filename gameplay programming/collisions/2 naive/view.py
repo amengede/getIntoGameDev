@@ -103,9 +103,9 @@ class CubeMapModel:
 
         # x, y, z
         self.vertices = (
-             l/2,  w/2, -h/2,
-            -l/2,  w/2, -h/2,
             -l/2, -w/2, -h/2,
+            -l/2,  w/2, -h/2,
+             l/2,  w/2, -h/2,
 
              l/2,  w/2, -h/2,
              l/2, -w/2, -h/2,
@@ -179,12 +179,12 @@ class GameRenderer:
         glCullFace(GL_BACK)
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS)
+
+        self.create_assets()
         
         self.create_shaders()
         self.set_onetime_shader_data()
         self.query_shader_locations()
-
-        self.create_assets()
     
     def create_shaders(self):
 
@@ -273,14 +273,14 @@ class GameRenderer:
         glDrawArrays(GL_TRIANGLES, 0, self.player_debug_model.vertex_count)
 
         glBindVertexArray(self.block_debug_model.vao)
-        glDisable(GL_CULL_FACE)
         for block in scene.blocks:
             glUniformMatrix4fv(self.model_location["colored"], 1, GL_FALSE, block.modelTransform)
             glUniform3fv(self.color_location, 1, block.color)
             glDrawArrays(GL_TRIANGLES, 0, self.block_debug_model.vertex_count)
-        glEnable(GL_CULL_FACE)
 
-        glfw.swap_buffers(self.window)
+        #For uncapped framerate: glFlush
+        #glfw.swap_buffers(self.window)
+        glFlush()
 
     def destroy(self):
 

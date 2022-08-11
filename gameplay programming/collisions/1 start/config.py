@@ -6,6 +6,7 @@ import numpy as np
 import pyrr
 import ctypes
 from PIL import Image, ImageOps
+import platform
 
 ############################## Constants ######################################
 
@@ -26,9 +27,18 @@ def initialize_glfw():
     glfw.window_hint(GLFW_CONSTANTS.GLFW_CONTEXT_VERSION_MAJOR,3)
     glfw.window_hint(GLFW_CONSTANTS.GLFW_CONTEXT_VERSION_MINOR,3)
     glfw.window_hint(GLFW_CONSTANTS.GLFW_OPENGL_PROFILE, GLFW_CONSTANTS.GLFW_OPENGL_CORE_PROFILE)
+    glfw.window_hint(GLFW_CONSTANTS.GLFW_OPENGL_FORWARD_COMPAT, GLFW_CONSTANTS.GLFW_TRUE)
+    #for uncapped framerate
+    glfw.window_hint(GLFW_CONSTANTS.GLFW_DOUBLEBUFFER,GL_FALSE) 
     window = glfw.create_window(SCREEN_WIDTH, SCREEN_HEIGHT, "Title", None, None)
     glfw.make_context_current(window)
-    glViewport(0,0,SCREEN_WIDTH, SCREEN_HEIGHT)
+    
+    if platform.system() == "Windows":
+        glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
+    else:
+        # for macos, don't ask why...
+        glViewport(0, 0, 2 * SCREEN_WIDTH, 2 * SCREEN_HEIGHT)
+    
     glEnable(GL_PROGRAM_POINT_SIZE)
     glClearColor(0.1, 0.1, 0.1, 1)
 

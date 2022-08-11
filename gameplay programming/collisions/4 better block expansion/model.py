@@ -178,13 +178,19 @@ class Scene:
         geometry.grid.add(self.player)
         self.camera = Camera(position = [-7.2,0,3.6])
         self.ground = Ground(z = 0)
-        self.blocks = [
-            Block(position = [16, 16, 1]),
-            Block(position = [24, 18, 4]),
-            Block(position = [28, 14, 7]),
-            Block(position = [32, 10, 10]),
-            Block(position = [36, 18, 13]),
-        ]
+        self.blocks = []
+        for x in range(-128, 128, 32):
+            for y in range(-128, 128, 32):
+                for z in range(0, 128, 32):
+                    if x == 0 and y == 0 and z == 0:
+                        continue
+                    self.blocks.append(Block(
+                        [
+                            x + np.random.uniform(0, 16),
+                            y + np.random.uniform(0,16),
+                            z + np.random.uniform(0,16)
+                        ]
+                    ))
         for block in self.blocks:
             geometry.grid.add(block)
 
