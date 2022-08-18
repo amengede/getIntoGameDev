@@ -6,7 +6,6 @@ import numpy as np
 import pyrr
 import ctypes
 from PIL import Image, ImageOps
-import platform
 
 ############################## Constants ######################################
 
@@ -33,11 +32,7 @@ def initialize_glfw():
     window = glfw.create_window(SCREEN_WIDTH, SCREEN_HEIGHT, "Title", None, None)
     glfw.make_context_current(window)
     
-    if platform.system() == "Windows":
-        glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
-    else:
-        # for macos, don't ask why...
-        glViewport(0, 0, 2 * SCREEN_WIDTH, 2 * SCREEN_HEIGHT)
+    #glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
     
     glEnable(GL_PROGRAM_POINT_SIZE)
     glClearColor(0.1, 0.1, 0.1, 1)

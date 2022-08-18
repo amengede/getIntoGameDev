@@ -37,7 +37,7 @@ def initialize_glfw():
         glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
     else:
         # for macos, don't ask why...
-        glViewport(0, 0, 2 * SCREEN_WIDTH, 2 * SCREEN_HEIGHT)
+        glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
     
     glEnable(GL_PROGRAM_POINT_SIZE)
     glClearColor(0.1, 0.1, 0.1, 1)

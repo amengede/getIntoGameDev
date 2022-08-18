@@ -1,8 +1,45 @@
-import pygame as pg
+import glfw
+import glfw.GLFW as GLFW_CONSTANTS
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram,compileShader
 import numpy as np
 import pyrr
+import ctypes
+from PIL import Image, ImageOps
+
+############################## Constants ######################################
+
+SCREEN_WIDTH = 640
+SCREEN_HEIGHT = 480
+
+RETURN_ACTION_CONTINUE = 0
+RETURN_ACTION_EXIT = 1
+
+#0: debug, 1: production
+GAME_MODE = 0
+
+############################## helper functions ###############################
+
+def initialize_glfw():
+
+    glfw.init()
+    glfw.window_hint(GLFW_CONSTANTS.GLFW_CONTEXT_VERSION_MAJOR,3)
+    glfw.window_hint(GLFW_CONSTANTS.GLFW_CONTEXT_VERSION_MINOR,3)
+    glfw.window_hint(GLFW_CONSTANTS.GLFW_OPENGL_PROFILE, GLFW_CONSTANTS.GLFW_OPENGL_CORE_PROFILE)
+    glfw.window_hint(GLFW_CONSTANTS.GLFW_OPENGL_FORWARD_COMPAT, GLFW_CONSTANTS.GLFW_TRUE)
+    #for uncapped framerate
+    glfw.window_hint(GLFW_CONSTANTS.GLFW_DOUBLEBUFFER,GL_FALSE) 
+    window = glfw.create_window(SCREEN_WIDTH, SCREEN_HEIGHT, "Title", None, None)
+    glfw.make_context_current(window)
+    
+    #glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
+    
+    glEnable(GL_PROGRAM_POINT_SIZE)
+    glClearColor(0.1, 0.1, 0.1, 1)
+
+    return window
+
+###############################################################################
 
 class Cube:
 
@@ -83,16 +120,15 @@ class Scene:
 class App:
 
 
-    def __init__(self, screenWidth, screenHeight):
+    def __init__(self, window):
 
-        self.screenWidth = screenWidth
-        self.screenHeight = screenHeight
+        self.window = window
 
         self.renderer = GraphicsEngine()
 
         self.scene = Scene()
 
-        self.lastTime = pg.time.get_ticks()
+        self.lastTime = glfw.get_time()
         self.currentTime = 0
         self.numFrames = 0
         self.frameTime = 0
@@ -103,17 +139,16 @@ class App:
         running = True
         while (running):
             #check events
-            for event in pg.event.get():
-                if (event.type == pg.QUIT):
-                    running = False
-                elif event.type == pg.KEYDOWN:
-                    if event.key == pg.K_ESCAPE:
-                        running = False
+            if glfw.window_should_close(self.window) \
+                or glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_ESCAPE) == GLFW_CONSTANTS.GLFW_PRESS:
+                running = False
             
             self.handleKeys()
             self.handleMouse()
 
-            self.scene.update(self.frameTime * 0.05)
+            glfw.poll_events()
+
+            self.scene.update(self.frameTime / 16.67)
             
             self.renderer.render(self.scene)
 
@@ -123,7 +158,6 @@ class App:
 
     def handleKeys(self):
 
-        keys = pg.key.get_pressed()
         combo = 0
         directionModifier = 0
         """
@@ -144,13 +178,13 @@ class App:
         w & a & s & d: 15 -> x
         """
 
-        if keys[pg.K_w]:
+        if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_W) == GLFW_CONSTANTS.GLFW_PRESS:
             combo += 1
-        if keys[pg.K_a]:
+        if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_A) == GLFW_CONSTANTS.GLFW_PRESS:
             combo += 2
-        if keys[pg.K_s]:
+        if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_S) == GLFW_CONSTANTS.GLFW_PRESS:
             combo += 4
-        if keys[pg.K_d]:
+        if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_D) == GLFW_CONSTANTS.GLFW_PRESS:
             combo += 8
         
         if combo > 0:
@@ -179,19 +213,20 @@ class App:
 
     def handleMouse(self):
 
-        (x,y) = pg.mouse.get_pos()
-        theta_increment = self.frameTime * 0.05 * ((self.screenWidth // 2) - x)
-        phi_increment = self.frameTime * 0.05 * ((self.screenHeight // 2) - y)
+        (x,y) = glfw.get_cursor_pos(self.window)
+        rate = self.frameTime / 16.67
+        theta_increment = rate * ((SCREEN_WIDTH / 2) - x)
+        phi_increment = rate * ((SCREEN_HEIGHT / 2) - y)
         self.scene.spin_player(theta_increment, phi_increment)
-        pg.mouse.set_pos((self.screenWidth // 2,self.screenHeight // 2))
+        glfw.set_cursor_pos(self.window, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
 
     def calculateFramerate(self):
 
-        self.currentTime = pg.time.get_ticks()
+        self.currentTime = glfw.get_time()
         delta = self.currentTime - self.lastTime
-        if (delta >= 1000):
-            framerate = max(1,int(1000.0 * self.numFrames/delta))
-            pg.display.set_caption(f"Running at {framerate} fps.")
+        if (delta >= 1):
+            framerate = max(1,int(self.numFrames/delta))
+            glfw.set_window_title(self.window, f"Running at {framerate} fps.")
             self.lastTime = self.currentTime
             self.numFrames = -1
             self.frameTime = float(1000.0 / max(1,framerate))
@@ -205,15 +240,6 @@ class GraphicsEngine:
 
 
     def __init__(self):
-
-        #initialise pygame
-        pg.init()
-        pg.mouse.set_visible(False)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK,
-                                    pg.GL_CONTEXT_PROFILE_CORE)
-        pg.display.set_mode((640,480), pg.OPENGL|pg.DOUBLEBUF)
 
         self.wood_texture = Material("gfx/wood.jpeg")
         self.cube_mesh = Mesh("models/cube.obj")
@@ -282,14 +308,13 @@ class GraphicsEngine:
             glBindVertexArray(self.cube_mesh.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.cube_mesh.vertex_count)
 
-            pg.display.flip()
+            glFlush()
 
     def destroy(self):
 
         self.cube_mesh.destroy()
         self.wood_texture.destroy()
         glDeleteProgram(self.shader)
-        pg.quit()
 
 class Mesh:
 
@@ -401,10 +426,11 @@ class Material:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        image = pg.image.load(filepath).convert()
-        image_width,image_height = image.get_rect().size
-        img_data = pg.image.tostring(image,'RGBA')
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
+        with Image.open(filepath, mode = "r") as img:
+            image_width,image_height = img.size
+            img = img.convert("RGBA")
+            img_data = bytes(img.tobytes())
+            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
         glGenerateMipmap(GL_TEXTURE_2D)
 
     def use(self):
@@ -414,4 +440,5 @@ class Material:
     def destroy(self):
         glDeleteTextures(1, (self.texture,))
 
-myApp = App(800,600)
+window = initialize_glfw()
+myApp = App(window)

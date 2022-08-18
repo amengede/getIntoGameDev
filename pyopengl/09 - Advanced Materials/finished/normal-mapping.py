@@ -1,9 +1,43 @@
-import pygame as pg
+import glfw
+import glfw.GLFW as GLFW_CONSTANTS
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram,compileShader
 import numpy as np
 import pyrr
-import random
+import ctypes
+from PIL import Image, ImageOps
+
+############################## Constants ######################################
+
+SCREEN_WIDTH = 640
+SCREEN_HEIGHT = 480
+
+RETURN_ACTION_CONTINUE = 0
+RETURN_ACTION_EXIT = 1
+
+#0: debug, 1: production
+GAME_MODE = 0
+
+############################## helper functions ###############################
+
+def initialize_glfw():
+
+    glfw.init()
+    glfw.window_hint(GLFW_CONSTANTS.GLFW_CONTEXT_VERSION_MAJOR,3)
+    glfw.window_hint(GLFW_CONSTANTS.GLFW_CONTEXT_VERSION_MINOR,3)
+    glfw.window_hint(GLFW_CONSTANTS.GLFW_OPENGL_PROFILE, GLFW_CONSTANTS.GLFW_OPENGL_CORE_PROFILE)
+    glfw.window_hint(GLFW_CONSTANTS.GLFW_OPENGL_FORWARD_COMPAT, GLFW_CONSTANTS.GLFW_TRUE)
+    #for uncapped framerate
+    glfw.window_hint(GLFW_CONSTANTS.GLFW_DOUBLEBUFFER,GL_FALSE) 
+    window = glfw.create_window(SCREEN_WIDTH, SCREEN_HEIGHT, "Title", None, None)
+    glfw.make_context_current(window)
+    
+    #glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
+    
+    glEnable(GL_PROGRAM_POINT_SIZE)
+    glClearColor(0.1, 0.1, 0.1, 1)
+
+    return window
 
 ##################################### Model ###################################
 
@@ -97,9 +131,9 @@ class Scene:
 
         self.cubes = [
             Cube(
-                position = [random.uniform(a = -10, b = 10) for x in range(3)],
-                eulers = [random.uniform(a = 0, b = 360) for x in range(3)],
-                eulerVelocity = [random.uniform(a = -0.1, b = 0.1) for x in range(3)]
+                position = [np.random.uniform(a = -10, b = 10) for x in range(3)],
+                eulers = [np.random.uniform(a = 0, b = 360) for x in range(3)],
+                eulerVelocity = [np.random.uniform(a = -0.1, b = 0.1) for x in range(3)]
             )
 
             for i in range(200)
@@ -107,8 +141,8 @@ class Scene:
 
         self.lights = [
             Light(
-                position = [random.uniform(a = -10, b = 10) for x in range(3)],
-                color = [random.uniform(a = 0.5, b = 1) for x in range(3)]
+                position = [np.random.uniform(a = -10, b = 10) for x in range(3)],
+                color = [np.random.uniform(a = 0.5, b = 1) for x in range(3)]
             )
 
             for i in range(8)
@@ -133,22 +167,14 @@ class Scene:
 class App:
 
 
-    def __init__(self):
+    def __init__(self, window):
+
+        self.window = window
 
         self.lastTime = 0
         self.currentTime = 0
         self.numFrames = 0
         self.frameTime = 0
-
-        #initialise pygame
-        pg.init()
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK,
-                                    pg.GL_CONTEXT_PROFILE_CORE)
-        pg.display.set_mode((640,480), pg.OPENGL|pg.DOUBLEBUF)
-        pg.mouse.set_pos((320,240))
-        pg.mouse.set_visible(False)
 
         self.scene = Scene()
 
@@ -160,55 +186,62 @@ class App:
         running = True
         while (running):
             #check events
-            for event in pg.event.get():
-                if (event.type == pg.KEYDOWN and event.key==pg.K_ESCAPE):
-                    running = False
-            self.handleMouse()
+            if glfw.window_should_close(self.window) \
+                or glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_ESCAPE) == GLFW_CONSTANTS.GLFW_PRESS:
+                running = False
+            
             self.handleKeys()
-            #update objects
-            self.scene.update()
-            #refresh screen
-            self.engine.draw(self.scene)
-            self.showFrameRate()
+            self.handleMouse()
+
+            glfw.poll_events()
+
+            self.scene.update(self.frameTime / 16.67)
+            
+            self.renderer.render(self.scene)
+
+            #timing
+            self.calculateFramerate()
         self.quit()
 
     def handleKeys(self):
-        keys = pg.key.get_pressed()
-        if keys[pg.K_w]:
+        
+        if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_W) == GLFW_CONSTANTS.GLFW_PRESS:
             self.scene.player.move(0, 0.0025*self.frameTime)
             return
-        if keys[pg.K_a]:
+        if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_A) == GLFW_CONSTANTS.GLFW_PRESS:
             self.scene.player.move(90, 0.0025*self.frameTime)
             return
-        if keys[pg.K_s]:
+        if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_S) == GLFW_CONSTANTS.GLFW_PRESS:
             self.scene.player.move(180, 0.0025*self.frameTime)
             return
-        if keys[pg.K_d]:
+        if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_D) == GLFW_CONSTANTS.GLFW_PRESS:
             self.scene.player.move(-90, 0.0025*self.frameTime)
             return
 
     def handleMouse(self):
-        (x,y) = pg.mouse.get_pos()
-        theta_increment = self.frameTime * 0.05 * (320 - x)
-        phi_increment = self.frameTime * 0.05 * (240 - y)
+
+        (x,y) = glfw.get_cursor_pos(self.window)
+        rate = self.frameTime / 16.67
+        theta_increment = rate * ((SCREEN_WIDTH / 2) - x)
+        phi_increment = rate * ((SCREEN_HEIGHT / 2) - y)
         self.scene.player.increment_direction(theta_increment, phi_increment)
-        pg.mouse.set_pos((320,240))
+        glfw.set_cursor_pos(self.window, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
 
     def showFrameRate(self):
-        self.currentTime = pg.time.get_ticks()
+
+        self.currentTime = glfw.get_time()
         delta = self.currentTime - self.lastTime
-        if (delta >= 1000):
-            framerate = int(1000.0 * self.numFrames/delta)
-            pg.display.set_caption(f"Running at {framerate} fps.")
+        if (delta >= 1):
+            framerate = max(1,int(self.numFrames/delta))
+            glfw.set_window_title(self.window, f"Running at {framerate} fps.")
             self.lastTime = self.currentTime
             self.numFrames = -1
-            self.frameTime = float(1000.0 / max(framerate,1))
+            self.frameTime = float(1000.0 / max(1,framerate))
         self.numFrames += 1
     
     def quit(self):
 
         self.engine.quit()
-        pg.quit()
 
 ##################################### View ####################################
 
@@ -440,7 +473,7 @@ class Engine:
             glBindVertexArray(self.light_mesh.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.light_mesh.vertex_count)
 
-        pg.display.flip()
+        glFlush()
 
     def quit(self):
         self.cube_mesh.destroy()
@@ -449,7 +482,6 @@ class Engine:
         glDeleteBuffers(1, (self.cubeTransformVBO,))
         glDeleteProgram(self.shaderTextured)
         glDeleteProgram(self.shaderColored)
-        pg.quit()
 
 class Material:
     def __init__(self, filename, filetype):
@@ -463,10 +495,11 @@ class Material:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        image = pg.image.load(f"gfx/{filename}_albedo.{filetype}").convert()
-        image_width,image_height = image.get_rect().size
-        img_data = pg.image.tostring(image,'RGBA')
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
+        with Image.open(f"gfx/{filename}_albedo.{filetype}", mode = "r") as img:
+            image_width,image_height = img.size
+            img = img.convert("RGBA")
+            img_data = bytes(img.tobytes())
+            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
         glGenerateMipmap(GL_TEXTURE_2D)
         
         #ambient occlusion : 1
@@ -476,10 +509,11 @@ class Material:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        image = pg.image.load(f"gfx/{filename}_ao.{filetype}").convert()
-        image_width,image_height = image.get_rect().size
-        img_data = pg.image.tostring(image,'RGBA')
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
+        with Image.open(f"gfx/{filename}_ao.{filetype}", mode = "r") as img:
+            image_width,image_height = img.size
+            img = img.convert("RGBA")
+            img_data = bytes(img.tobytes())
+            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
         glGenerateMipmap(GL_TEXTURE_2D)
 
         #normal : 2
@@ -489,10 +523,11 @@ class Material:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        image = pg.image.load(f"gfx/{filename}_normal.{filetype}").convert()
-        image_width,image_height = image.get_rect().size
-        img_data = pg.image.tostring(image,'RGBA')
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
+        with Image.open(f"gfx/{filename}_normal.{filetype}", mode = "r") as img:
+            image_width,image_height = img.size
+            img = img.convert("RGBA")
+            img_data = bytes(img.tobytes())
+            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
         glGenerateMipmap(GL_TEXTURE_2D)
 
         #specular : 3
@@ -502,10 +537,11 @@ class Material:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        image = pg.image.load(f"gfx/{filename}_normal.{filetype}").convert()
-        image_width,image_height = image.get_rect().size
-        img_data = pg.image.tostring(image,'RGBA')
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
+        with Image.open(f"gfx/{filename}_specular.{filetype}", mode = "r") as img:
+            image_width,image_height = img.size
+            img = img.convert("RGBA")
+            img_data = bytes(img.tobytes())
+            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
         glGenerateMipmap(GL_TEXTURE_2D)
 
     def use(self):
@@ -736,4 +772,5 @@ class ObjMesh:
 
 ###############################################################################
 
-myApp = App()
+window = initialize_glfw()
+myApp = App(window)
