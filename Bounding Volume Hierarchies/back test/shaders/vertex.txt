@@ -1,0 +1,12 @@
+#version 450 core
+
+layout (location = 0) in vec2 vertexPosition;
+layout (location = 1) in vec2 vertexTexCoords;
+
+out vec2 fragmentTexCoords;
+
+void main()
+{
+    gl_Position = vec4(vertexPosition, 0.0, 1.0);
+    fragmentTexCoords = vec2(vertexTexCoords.x, vertexTexCoords.y);
+}

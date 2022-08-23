@@ -1,0 +1,12 @@
+#version 450 core
+
+in vec2 fragmentTexCoords;
+
+uniform sampler2D frameBuffer;
+
+out vec4 finalColor;
+
+void main()
+{
+    finalColor = texture(frameBuffer, fragmentTexCoords);
+}
