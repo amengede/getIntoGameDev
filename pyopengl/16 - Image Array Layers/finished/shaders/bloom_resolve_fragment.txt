@@ -1,0 +1,19 @@
+#version 330 core
+
+in vec2 fragmentTexCoord;
+
+layout (location = 0) out vec4 fragmentColor;
+
+uniform sampler2D material;
+uniform sampler2D bright_material;
+
+void main() {
+    vec3 color_a = vec3(texture(material, fragmentTexCoord));
+    vec3 color_b = vec3(texture(bright_material, fragmentTexCoord));
+
+    float r = min(1.0, max(color_a.r, 2.0 * color_b.r));
+    float g = min(1.0, max(color_a.g, 2.0 * color_b.g));
+    float b = min(1.0, max(color_a.b, 2.0 * color_b.b));
+
+    fragmentColor = vec4(r, g, b, 1.0);
+}
