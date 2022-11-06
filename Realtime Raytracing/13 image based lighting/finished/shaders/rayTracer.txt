@@ -1,0 +1,266 @@
+#version 430
+
+struct Sphere {
+    vec3 center;
+    float radius;
+    vec3 color;
+    float roughness;
+};
+
+struct Node {
+    vec3 min_corner;
+    vec3 max_corner;
+    int index;
+    int hit_link;
+    int miss_link;
+    int id_offset;
+    int id_count;
+};
+
+struct Camera {
+    vec3 position;
+    vec3 forwards;
+    vec3 right;
+    vec3 up;
+};
+
+struct Ray {
+    vec3 origin;
+    vec3 direction;
+};
+
+struct RenderState {
+    float t;
+    vec3 color;
+    vec3 position;
+    vec3 normal;
+    bool hit;
+    float roughness;
+};
+
+// input/output
+layout(local_size_x = 1, local_size_y = 1) in;
+layout(rgba32f, binding = 0) uniform image2D img_output;
+
+//Scene data
+uniform Camera viewer;
+layout(rgba32f, binding = 1) readonly uniform image2D objects;
+layout(rgba32f, binding = 2) readonly uniform image2D nodes;
+layout(rgba32f, binding = 3) readonly uniform image2D sphere_lookup_table;
+uniform samplerCube sky_cube;
+uniform float sphereCount;
+uniform float nodeCount;
+
+RenderState trace(Ray ray);
+
+Sphere unpackSphere(int index);
+
+Node unpackNode(int index);
+
+int lookupSphereIndex(int index);
+
+RenderState hit(Ray ray, Sphere sphere, float tMin, float tMax, RenderState renderstate);
+
+bool hit(Ray ray, Node node, float nearestHit);
+
+float box(Ray ray, Node node);
+
+const float PHI = 1.61803398874989484820459;
+const float PI = 3.141592653589793238;
+
+float gold_noise(in vec2 xy, in float seed) {
+    return fract(tan(distance(xy*PHI, xy)*seed)*xy.x);
+}
+
+vec3 randomVec(vec2 xy, float seed) {
+    float radius = 0.99 * gold_noise(xy, seed);
+    float theta = 2.0 * PI * gold_noise(xy, seed + 1.0);
+    float phi = PI * gold_noise(xy, seed + 2.0);
+
+    return vec3(
+        radius * cos(theta) * cos(phi),
+        radius * sin(theta) * cos(phi),
+        radius * sin(phi)
+    );
+}
+
+void main() {
+
+    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 screen_size = imageSize(img_output);
+
+    vec3 finalColor = vec3(0.0);
+        
+    float horizontalCoefficient = float(pixel_coords.x);
+    horizontalCoefficient = (horizontalCoefficient * 2 - screen_size.x) / screen_size.x;
+        
+    float verticalCoefficient = float(pixel_coords.y);
+    verticalCoefficient = (verticalCoefficient * 2 - screen_size.y) / screen_size.x;
+
+    Ray ray;
+    ray.origin = viewer.position;
+    ray.direction = viewer.forwards + horizontalCoefficient * viewer.right + verticalCoefficient * viewer.up;
+    
+    vec3 pixel = vec3(1.0);
+    RenderState renderState;
+    for (int bounce = 0; bounce < 4; bounce++) {
+        
+
+        renderState = trace(ray);
+
+        //unpack color
+        pixel = pixel * renderState.color;
+
+        //early exit
+        if (!renderState.hit) {
+            break;
+        }
+
+        //set up ray for next trace
+        ray.origin = renderState.position;
+        ray.direction = reflect(ray.direction, renderState.normal);
+        vec3 variation = randomVec(vec2(pixel_coords), float(bounce));
+        ray.direction = normalize(ray.direction + renderState.roughness * variation);
+
+    }
+    if (renderState.hit) {
+        pixel = vec3(0.0);
+    }
+
+    finalColor = pixel;
+
+    imageStore(img_output, pixel_coords, vec4(finalColor,1.0));
+}
+
+RenderState trace(Ray ray) {
+
+    RenderState renderState;
+    renderState.hit = false;
+    renderState.color = vec3(texture(sky_cube, ray.direction));
+    float nearestHit = 999999999;
+
+    int nextNodeIndex = 0;
+
+    for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
+
+        if (nodeIndex != nextNodeIndex) {
+            continue;
+        }
+
+        Node node = unpackNode(nodeIndex);
+
+        bool hit_node = hit(ray, node, nearestHit);
+        bool node_is_external = node.id_count > 0;
+
+        if (hit_node) {
+            nextNodeIndex = node.hit_link;
+        }
+        else {
+            nextNodeIndex = node.miss_link;
+        }
+    
+        if (hit_node && node_is_external) {
+
+            int a = node.id_offset;
+            int b = node.id_count;
+    
+            for (int i = a; i < a + b; i++) {
+
+                int sphereIndex = lookupSphereIndex(i);
+
+                RenderState newRenderState = hit(ray, unpackSphere(sphereIndex), 0.001, nearestHit, renderState);
+
+                if (newRenderState.hit) {
+                    nearestHit = newRenderState.t;
+                    renderState = newRenderState;
+                }
+            }
+        }
+    }
+        
+    return renderState;
+}
+
+RenderState hit(Ray ray, Sphere sphere, float tMin, float tMax, RenderState renderState) {
+
+    vec3 co = ray.origin - sphere.center;
+    float a = dot(ray.direction, ray.direction);
+    float b = 2 * dot(ray.direction, co);
+    float c = dot(co, co) - sphere.radius * sphere.radius;
+    float discriminant = b * b - (4 * a * c);
+    
+    if (discriminant > 0.0) {
+
+        float t = (-b - sqrt(discriminant)) / (2 * a);
+
+        if (t > tMin && t < tMax) {
+
+            renderState.position = ray.origin + t * ray.direction;
+            renderState.normal = normalize(renderState.position - sphere.center);
+            renderState.t = t;
+            renderState.color = sphere.color;
+            renderState.roughness = sphere.roughness;
+            renderState.hit = true;
+            return renderState;
+        }
+    }
+    renderState.hit = false;
+    return renderState;
+}
+
+bool hit(Ray ray, Node node, float nearestHit) {
+
+    vec3 tMin = (node.min_corner - ray.origin) / ray.direction;
+    vec3 tMax = (node.max_corner - ray.origin) / ray.direction;
+    vec3 t1 = min(tMin, tMax);
+    vec3 t2 = max(tMin, tMax);
+    float tNear = max(max(t1.x, t1.y), t1.z);
+    float tFar = min(min(t2.x, t2.y), t2.z);
+    return tNear <= tFar && tFar > 0 && tNear < nearestHit;
+}
+
+Sphere unpackSphere(int index) {
+
+    // sphere: (cx cy cz r) (r g b roughness) (- - - -) (- - - -) (- - - -)
+
+    Sphere sphere;
+    vec4 attributeChunk = imageLoad(objects, ivec2(0, index));
+    sphere.center = attributeChunk.xyz;
+    sphere.radius = attributeChunk.w;
+    
+    attributeChunk = imageLoad(objects, ivec2(1, index));
+    sphere.color = attributeChunk.xyz;
+    sphere.roughness = attributeChunk.w;
+
+    return sphere;
+}
+
+Node unpackNode(int index) {
+
+    // node: (x_min, y_min, z_min, x_max) (y_max, z_max, index hit_link) (miss_link, offset, count, _)
+
+    Node node;
+    vec4 attributeChunk = imageLoad(nodes, ivec2(0, index));
+    node.min_corner = attributeChunk.xyz;
+    node.max_corner.x = attributeChunk.w;
+    
+    attributeChunk = imageLoad(nodes, ivec2(1, index));
+    node.max_corner.yz = attributeChunk.xy;
+    node.index = int(attributeChunk.z);
+    node.hit_link = int(attributeChunk.w);
+
+    attributeChunk = imageLoad(nodes, ivec2(2, index));
+    node.miss_link = int(attributeChunk.x);
+    node.id_offset = int(attributeChunk.y);
+    node.id_count = int(attributeChunk.z);
+
+    return node;
+}
+
+int lookupSphereIndex(int index) {
+    // index: (index _ _ _)
+
+    vec4 attributeChunk = imageLoad(sphere_lookup_table, ivec2(0, index));
+
+    return int(attributeChunk.x);
+}
