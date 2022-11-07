@@ -120,7 +120,7 @@ class Scene:
     def subdivide(self, node_index):
 
         _node: node.Node = self.nodes[node_index]
-        if _node.sphere_count <= 16:
+        if _node.sphere_count <= 4:
             return
 
         extent = _node.max_corner - _node.min_corner

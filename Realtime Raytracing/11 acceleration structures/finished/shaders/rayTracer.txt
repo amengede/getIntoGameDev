@@ -144,13 +144,9 @@ RenderState trace(Ray ray) {
 
     int nextNodeIndex = 0;
 
-    for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
+    while (nextNodeIndex >= 0) {
 
-        if (nodeIndex != nextNodeIndex) {
-            continue;
-        }
-
-        Node node = unpackNode(nodeIndex);
+        Node node = unpackNode(nextNodeIndex);
 
         bool hit_node = hit(ray, node, nearestHit);
         bool node_is_external = node.id_count > 0;
