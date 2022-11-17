@@ -3,8 +3,8 @@ from config import *
 @njit(cache=True)
 def add_dynamic_object(
     new_x: float, new_y: float, 
-    pos_x: np.ndarray, pos_y: np.ndarray, 
-    vel_x: np.ndarray, vel_y: np.ndarray, 
+    pos: np.ndarray,
+    vel: np.ndarray,
     obj_count: int, max_obj_count: int) -> int:
     """
         Try to record a new dynamic object (position and velocity)
@@ -12,10 +12,8 @@ def add_dynamic_object(
         Parameters:
             new_x: x coordinate of the object to be added
             new_y: y coordinate of the object to be added
-            pos_x: array holding x coordinates of objects
-            pos_y: array holding y coordinates of objects
-            vel_x: array holding x velocity components of objects
-            vel_y: array holding y velocity components of objects
+            pos: array holding positions of objects
+            vel: array holding velocities of objects
             obj_count: number of objects currently existing
             max_obj_count: maximum capacity of arrays
         
@@ -26,28 +24,26 @@ def add_dynamic_object(
     if obj_count == max_obj_count:
         return obj_count
     
-    pos_x[obj_count] = new_x
-    pos_y[obj_count] = new_y
-    vel_x[obj_count] = 0.0
-    vel_y[obj_count] = 0.0
+    pos[2 * obj_count]     = new_x
+    pos[2 * obj_count + 1] = new_y
+    vel[2 * obj_count] = 0.0
+    vel[2 * obj_count + 1] = 0.0
     
     return obj_count + 1
 
 @njit(cache=True)
 def remove_dynamic_object(
     index: int, 
-    pos_x: np.ndarray, pos_y: np.ndarray, 
-    vel_x: np.ndarray, vel_y: np.ndarray, 
+    pos: np.ndarray,
+    vel: np.ndarray,
     obj_count: int) -> int:
     """
         Try to remove a dynamic object (position and velocity)
 
         Parameters:
             index: index of the sphere to remove
-            pos_x: array holding x coordinates of existing objects
-            pos_y: array holding y coordinates of existing objects
-            vel_x: array holding x velocity components of existing objects
-            vel_y: array holding y velocity components of existing objects
+            pos: array holding positions of existing objects
+            vel: array holding velocities of existing objects
             obj_count: number of objects currently existing
         
         Returns:
@@ -57,79 +53,85 @@ def remove_dynamic_object(
     if index <= 0 or index >= obj_count:
         return obj_count
     
-    for i in range(index, obj_count - 1):
-    
-        pos_x[i] = pos_x[i + 1]
-        pos_y[i] = pos_y[i + 1]
-        vel_x[i] = vel_x[i + 1]
-        vel_y[i] = vel_y[i + 1]
-    
-    pos_x[obj_count - 1] = np.nan
-    pos_y[obj_count - 1] = np.nan
-    vel_x[obj_count - 1] = np.nan
-    vel_y[obj_count - 1] = np.nan
+    pos[2 * index] = pos[2 * (obj_count - 1)]
+    pos[2 * index + 1] = pos[2 * (obj_count - 1) + 1]
+    vel[2 * index] = vel[2 * (obj_count - 1)]
+    vel[2 * index + 1] = vel[2 * (obj_count - 1) + 1]
+
+    pos[2 * (obj_count - 1)] = np.nan
+    pos[2 * (obj_count - 1) + 1] = np.nan
+    vel[2 * (obj_count - 1)] = np.nan
+    vel[2 * (obj_count - 1) + 1] = np.nan
     
     return obj_count - 1
 
 @njit(cache=True)
 def update_dynamic_objects(
     dt: float, 
-    pos_x: np.ndarray, pos_y: np.ndarray, 
-    vel_x: np.ndarray, vel_y: np.ndarray, 
+    pos: np.ndarray,
+    vel: np.ndarray, 
     obj_count: int) -> None:
     """
         Update dynamic objects
 
         Parameters:
             dt: number of seconds since last update
-            pos_x: array holding x coordinates of existing objects
-            pos_y: array holding y coordinates of existing objects
-            vel_x: array holding x velocity components of existing objects
-            vel_y: array holding y velocity components of existing objects
+            pos: array holding positions of existing objects
+            vel: array holding velocities of existing objects
             obj_count: number of objects currently existing
     """
 
     for i in range(obj_count):
 
+        #cache variables
+        vel_x = vel[2 * i]
+        vel_y = vel[2 * i + 1]
+        pos_x = pos[2 * i]
+        pos_y = pos[2 * i + 1]
+
         #apply friction to velocities
-        vel_x[i] = TABLE_FRICTION_MULTIPLIER * vel_x[i]
-        if np.abs(vel_x[i]) < 1e-7:
-            vel_x[i] = 0.0
-        vel_y[i] = TABLE_FRICTION_MULTIPLIER * vel_y[i]
-        if np.abs(vel_y[i]) < 1e-7:
-            vel_y[i] = 0.0
+        vel_x -= TABLE_FRICTION * dt * vel_x
+        if np.abs(vel_x) < 1e-7:
+            vel_x = 0.0
+        vel_y -= TABLE_FRICTION * dt * vel_y
+        if np.abs(vel_y) < 1e-7:
+            vel_y = 0.0
 
         #update positions, check boundary conditions
-        pos_x[i] = pos_x[i] + dt * vel_x[i]
-        if pos_x[i] - SPHERE_RADIUS <= 0:
-            pos_x[i] = SPHERE_RADIUS
-            vel_x[i] = -vel_x[i]
-        if pos_x[i] + SPHERE_RADIUS >= TABLE_LENGTH:
-            pos_x[i] = TABLE_LENGTH - SPHERE_RADIUS
-            vel_x[i] = -vel_x[i]
+        pos_x += dt * vel_x
+        if pos_x - SPHERE_RADIUS <= 0:
+            pos_x = SPHERE_RADIUS
+            vel_x = -vel_x
+        if pos_x + SPHERE_RADIUS >= TABLE_LENGTH:
+            pos_x = TABLE_LENGTH - SPHERE_RADIUS
+            vel_x = -vel_x
         
-        pos_y[i] = pos_y[i] + dt * vel_y[i]
-        if pos_y[i] - SPHERE_RADIUS <= 0:
-            pos_y[i] = SPHERE_RADIUS
-            vel_y[i] = -vel_y[i]
-        if pos_y[i] + SPHERE_RADIUS >= TABLE_WIDTH:
-            pos_y[i] = TABLE_WIDTH - SPHERE_RADIUS
-            vel_y[i] = -vel_y[i]
+        pos_y += dt * vel_y
+        if pos_y - SPHERE_RADIUS <= 0:
+            pos_y = SPHERE_RADIUS
+            vel_y = -vel_y
+        if pos_y + SPHERE_RADIUS >= TABLE_WIDTH:
+            pos_y = TABLE_WIDTH - SPHERE_RADIUS
+            vel_y = -vel_y
+        
+        #write variables back
+        vel[2 * i] = vel_x
+        vel[2 * i + 1] = vel_y
+        pos[2 * i] = pos_x
+        pos[2 * i + 1] = pos_y
 
 @njit(cache=True)
 def record_sphere_collisions_within_group(
-    pos_x: np.ndarray, pos_y: np.ndarray, 
-    collision_indices_a: np.ndarray, collision_indices_b: np.ndarray,
+    pos: np.ndarray, 
+    collision_indices: np.ndarray,
     obj_count: int) -> int:
     """
         record any collisions within members of the group,
         based on sphere collision masks
 
         Parameters:
-            pos_x: array holding x coordinates of existing objects
-            pos_y: array holding y coordinates of existing objects
-            collision_indices_a: indices of first objects in collision pairs
-            collision_indices_b: indices of first objects in collision pairs
+            pos: array holding positions of existing objects
+            collision_indices: indices of objects in collision pairs
             obj_count: number of objects currently existing
         
         Returns:
@@ -151,10 +153,10 @@ def record_sphere_collisions_within_group(
     for i in range(obj_count):
 
         #throw sphere into box(es)
-        left_column = int((pos_x[i] - SPHERE_RADIUS)/COLLISION_BOX_SIZE)
-        right_column = int((pos_x[i] + SPHERE_RADIUS)/COLLISION_BOX_SIZE)
-        top_row = int((pos_y[i] - SPHERE_RADIUS)/COLLISION_BOX_SIZE)
-        bottom_row = int((pos_y[i] + SPHERE_RADIUS)/COLLISION_BOX_SIZE)
+        left_column = int((pos[2 * i] - SPHERE_RADIUS)/COLLISION_BOX_SIZE)
+        right_column = int((pos[2 * i] + SPHERE_RADIUS)/COLLISION_BOX_SIZE)
+        top_row = int((pos[2 * i + 1] - SPHERE_RADIUS)/COLLISION_BOX_SIZE)
+        bottom_row = int((pos[2 * i + 1] + SPHERE_RADIUS)/COLLISION_BOX_SIZE)
         #top left
         index = objects_in_box[top_row][left_column]
         object_indices_in_box[top_row][left_column][index] = i
@@ -178,36 +180,36 @@ def record_sphere_collisions_within_group(
         for column in range(collision_grid_columns):
             for j in range(objects_in_box[row][column]):
                 index_a = object_indices_in_box[row][column][j]
+                x_a = pos[2 * index_a]
+                y_a = pos[2 * index_a + 1]
                 for k in range(j + 1,objects_in_box[row][column]):
                     index_b = object_indices_in_box[row][column][k]
                     if index_a == index_b:
                         continue
-                    x_a = pos_x[index_a]
-                    y_a = pos_y[index_a]
-                    x_b = pos_x[index_b]
-                    y_b = pos_y[index_b]
+                    x_b = pos[2 * index_b]
+                    y_b = pos[2 * index_b + 1]
                     dist = np.sqrt((x_a - x_b) ** 2 + (y_a - y_b) ** 2)
                     if dist <= 2 * SPHERE_RADIUS:
 
                         unique = True
                         for test_index in range(collision_count):
 
-                            if (collision_indices_a[test_index] == index_a)\
-                                and (collision_indices_b[test_index] == index_b):
+                            if (collision_indices[2 * test_index] == index_a)\
+                                and (collision_indices[2 * test_index + 1] == index_b):
                                 unique = False
                                 break
 
                         if unique:
-                            collision_indices_a[collision_count] = index_a
-                            collision_indices_b[collision_count] = index_b
+                            collision_indices[2 * collision_count] = index_a
+                            collision_indices[2 * collision_count + 1] = index_b
                             collision_count += 1
     
     return collision_count
 
 @njit(cache=True)
 def record_sphere_collisions_brute_force(
-    pos_x: np.ndarray, pos_y: np.ndarray, 
-    collision_indices_a: np.ndarray, collision_indices_b: np.ndarray,
+    pos: np.ndarray,
+    collision_indices: np.ndarray,
     obj_count: int) -> int:
     """
         record any collisions within members of the group,
@@ -216,10 +218,8 @@ def record_sphere_collisions_brute_force(
         acceptable.
 
         Parameters:
-            pos_x: array holding x coordinates of existing objects
-            pos_y: array holding y coordinates of existing objects
-            collision_indices_a: indices of first objects in collision pairs
-            collision_indices_b: indices of first objects in collision pairs
+            pos: array holding positions of existing objects
+            collision_indices: indices of objects in collision pairs
             obj_count: number of objects currently existing
         
         Returns:
@@ -229,44 +229,201 @@ def record_sphere_collisions_brute_force(
     collision_count = 0
     
     for index_a in range(obj_count):
+        x_a = pos[2 * index_a]
+        y_a = pos[2 * index_a + 1]
         for index_b in range(index_a + 1, obj_count):
-                    
-            x_a = pos_x[index_a]
-            y_a = pos_y[index_a]
-            x_b = pos_x[index_b]
-            y_b = pos_y[index_b]
+            x_b = pos[2 * index_b]
+            y_b = pos[2 * index_b + 1]
             dist = np.sqrt((x_a - x_b) ** 2 + (y_a - y_b) ** 2)
                     
             if dist <= 2 * SPHERE_RADIUS:
-                collision_indices_a[collision_count] = index_a
-                collision_indices_b[collision_count] = index_b
+                collision_indices[2 * collision_count] = index_a
+                collision_indices[2 * collision_count + 1] = index_b
                 collision_count += 1
     
     return collision_count
 
+@njit(cache=True)
+def project_u_on_v(
+    u: np.ndarray,
+    v: np.ndarray,
+    w: np.ndarray) -> None:
+    """
+        Populate w with the projection of u onto v
+    """
+    u_dot_v = u[0] * v[0] + u[1] * v[1] + u[2] * v[2]
+    v_dot_v = v[0] * v[0] + v[1] * v[1] + v[2] * v[2]
+
+    w[0] = v[0] * u_dot_v / v_dot_v
+    w[1] = v[1] * u_dot_v / v_dot_v
+    w[2] = v[2] * u_dot_v / v_dot_v
+
+@njit(cache=True)
+def resolve_sphere_collisions(
+    pos: np.ndarray,
+    vel: np.ndarray,
+    collision_indices: np.ndarray,
+    collision_count: int) -> None:
+    """
+        Resolve the collision pairs.
+
+        Parameters:
+
+            pos: array of all the sphere positions
+
+            vel: array of all the sphere velocities
+
+            collision_indices: array of indices of all collision pairs
+
+            collision_count: number of collision pairs
+    """
+
+    for i in range(collision_count):
+
+        #fetch data
+        x_a = pos[2 * collision_indices[2 * i]]
+        y_a = pos[2 * collision_indices[2 * i] + 1]
+        x_b = pos[2 * collision_indices[2 * i + 1]]
+        y_b = pos[2 * collision_indices[2 * i + 1] + 1]
+        vx_a = vel[2 * collision_indices[2 * i]]
+        vy_a = vel[2 * collision_indices[2 * i] + 1]
+        vx_b = vel[2 * collision_indices[2 * i + 1]]
+        vy_b = vel[2 * collision_indices[2 * i + 1] + 1]
+
+        disp_a_to_b = np.array([x_b - x_a, y_b - y_a, 0.0], dtype=np.float32)
+        vel_a = np.array([vx_a, vy_a, 0.0], dtype=np.float32)
+        vel_b = np.array([vx_b, vy_b, 0.0], dtype=np.float32)
+        temp_result = np.zeros(3, np.float32)
+
+        #calculate new velocities
+        new_vx_a = vx_a
+        new_vy_a = vy_a
+        project_u_on_v(u = vel_b, v = disp_a_to_b, w = temp_result)
+        new_vx_a += temp_result[0]
+        new_vy_a += temp_result[1]
+        project_u_on_v(u = vel_a, v = -disp_a_to_b, w = temp_result)
+        new_vx_a -= temp_result[0]
+        new_vy_a -= temp_result[1]
+
+        new_vx_b = vx_b
+        new_vy_b = vy_b
+        project_u_on_v(u = vel_a, v = disp_a_to_b, w = temp_result)
+        new_vx_b += temp_result[0]
+        new_vy_b += temp_result[1]
+        project_u_on_v(u = vel_b, v = -disp_a_to_b, w = temp_result)
+        new_vx_b -= temp_result[0]
+        new_vy_b -= temp_result[1]
+
+        #set data
+        vel[2 * collision_indices[2 * i]] = new_vx_a
+        vel[2 * collision_indices[2 * i] + 1] = new_vy_a
+        vel[2 * collision_indices[2 * i + 1]] = new_vx_b
+        vel[2 * collision_indices[2 * i + 1] + 1] = new_vy_b
+        collision_indices[2 * i] = -1
+        collision_indices[2 * i + 1] = -1
+
+@njit(cache=True)
+def record_sphere_collisions_two_groups_brute_force(
+    pos_a: np.ndarray,
+    pos_b: np.ndarray,
+    collision_indices: np.ndarray,
+    radius_a: float,
+    radius_b: float,
+    obj_count_a: int,
+    obj_count_b: int) -> int:
+    """
+        record any collisions between members of two groups,
+        based on sphere collision masks.
+        For smaller object counts a brute force algorithm may be
+        acceptable.
+
+        Parameters:
+            pos_a: array holding positions of group a objects
+            pos_b: array holding positions of group b objects
+            collision_indices: indices of objects in collision pairs
+            radius_a: radius of objects in group a
+            radius_b: radius of objects in group b
+            obj_count_a: number of group a objects
+            obj_count_b: number of group b objects
+        
+        Returns:
+            The number of collision pairs
+    """
+
+    collision_count = 0
+    
+    for index_a in range(obj_count_a):
+        x_a = pos_a[2 * index_a]
+        y_a = pos_a[2 * index_a + 1]
+        for index_b in range(obj_count_b):
+            x_b = pos_b[2 * index_b]
+            y_b = pos_b[2 * index_b + 1]
+            dist = np.sqrt((x_a - x_b) ** 2 + (y_a - y_b) ** 2)
+                    
+            if dist <= radius_a + radius_b:
+                collision_indices[2 * collision_count] = index_a
+                collision_indices[2 * collision_count + 1] = index_b
+                collision_count += 1
+    
+    return collision_count
+
+@njit(cache=True)
+def finalize_model_transforms(
+    model_transform: np.ndarray,
+    pos: np.ndarray,
+    offset: int,
+    obj_count: int) -> None:
+    """
+        Record the appropriate model transforms based on the
+        given data.
+
+        Parameters:
+            model_transform: Array to hold transform matrices
+
+            pos: array of positions for objects
+
+            offset: index of group member to start from
+
+            obj_count: number of group members to record
+    """
+
+    for i in range(offset, offset + obj_count):
+
+        x = pos[2 * i]
+        y = pos[2 * i + 1]
+        z = 0.0
+
+        model_matrix = np.array(
+            [
+                1.0, 0.0, 0.0, 0.0,
+                0.0, 1.0, 0.0, 0.0,
+                0.0, 0.0, 1.0, 0.0,
+                x,   y,   z,   1.0
+            ],
+            dtype = np.float32
+        )
+        
+        model_transform[16 * (i - offset):16 * (i - offset + 1)] = model_matrix
+    
 def print_data(
     sphere_count: int, 
-    pos_x: np.ndarray, pos_y: np.ndarray, 
-    vel_x: np.ndarray, vel_y: np.ndarray):
+    pos: np.ndarray,
+    vel: np.ndarray):
     
     print(f"Data holds {sphere_count} spheres")
-    print(f"x data: {pos_x}")
-    print(f"y data: {pos_y}")
-    print(f"v_x data: {vel_x}")
-    print(f"v_y data: {vel_y}")
+    print(f"positions: {pos}")
+    print(f"velocities: {vel}")
 
 def time_sphere_add():
 
-    x = np.array([10 ** i for i in range(1,5)])
+    x = np.array([100 * i for i in range(1,11)])
     y = np.zeros_like(x, dtype=np.float32)
     for j in range(x.size):
         max_spheres = int(x[j])
         print(f"Adding {max_spheres} spheres.")
         for _ in range(100):
-            sphere_x = np.full(max_spheres, np.nan, dtype=np.float32)
-            sphere_y = np.full(max_spheres, np.nan, dtype=np.float32)
-            sphere_velocity_x = np.full(max_spheres, np.nan, dtype=np.float32)
-            sphere_velocity_y = np.full(max_spheres, np.nan, dtype=np.float32)
+            sphere_position = np.full(2 * max_spheres, np.nan, dtype=np.float32)
+            sphere_velocity = np.full(2 * max_spheres, np.nan, dtype=np.float32)
             sphere_count = 0
 
             start = time.time()
@@ -274,8 +431,8 @@ def time_sphere_add():
         
                 sphere_count = add_dynamic_object(
                     new_x = i, new_y = 2 * i, 
-                    pos_x = sphere_x, pos_y = sphere_y, 
-                    vel_x = sphere_velocity_x, vel_y = sphere_velocity_y,
+                    pos = sphere_position, 
+                    vel = sphere_velocity,
                     obj_count = sphere_count, max_obj_count = max_spheres
                 )
     
@@ -291,14 +448,12 @@ def time_sphere_add():
 def test_sphere_add():
 
     max_spheres = 10
-    sphere_x = np.full(max_spheres, np.nan, dtype=np.float32)
-    sphere_y = np.full(max_spheres, np.nan, dtype=np.float32)
-    sphere_velocity_x = np.full(max_spheres, np.nan, dtype=np.float32)
-    sphere_velocity_y = np.full(max_spheres, np.nan, dtype=np.float32)
+    sphere_position = np.full(2 * max_spheres, np.nan, dtype=np.float32)
+    sphere_velocity = np.full(2 * max_spheres, np.nan, dtype=np.float32)
     sphere_count = 0
 
     print_data(
-        sphere_count, sphere_x, sphere_y, sphere_velocity_x, sphere_velocity_y
+        sphere_count, sphere_position, sphere_velocity
     )
 
     for i in range(20):
@@ -307,35 +462,33 @@ def test_sphere_add():
         
         sphere_count = add_dynamic_object(
             new_x = i, new_y = 2 * i, 
-            pos_x = sphere_x, pos_y = sphere_y, 
-            vel_x = sphere_velocity_x, vel_y = sphere_velocity_y,
+            pos = sphere_position,
+            vel = sphere_velocity,
             obj_count = sphere_count, max_obj_count = max_spheres
         )
 
         print_data(
-            sphere_count, sphere_x, sphere_y, sphere_velocity_x, sphere_velocity_y
+            sphere_count, sphere_position, sphere_velocity
         )
 
 def time_sphere_remove():
 
-    x = np.array([10 ** i for i in range(1,5)])
+    x = np.array([100 * i for i in range(1,11)])
     y = np.zeros_like(x,dtype=np.float32)
     for j in range(x.size):
         max_spheres = int(x[j])
         print(f"Deleting {max_spheres} spheres.")
         for _ in range(100):
-            sphere_x = np.full(max_spheres, np.nan, dtype=np.float32)
-            sphere_y = np.full(max_spheres, np.nan, dtype=np.float32)
-            sphere_velocity_x = np.full(max_spheres, np.nan, dtype=np.float32)
-            sphere_velocity_y = np.full(max_spheres, np.nan, dtype=np.float32)
+            sphere_position = np.full(2 * max_spheres, np.nan, dtype=np.float32)
+            sphere_velocity = np.full(2 * max_spheres, np.nan, dtype=np.float32)
             sphere_count = 0
 
             for i in range(max_spheres):
         
                 sphere_count = add_dynamic_object(
                     new_x = i, new_y = 2 * i, 
-                    pos_x = sphere_x, pos_y = sphere_y, 
-                    vel_x = sphere_velocity_x, vel_y = sphere_velocity_y,
+                    pos = sphere_position, 
+                    vel = sphere_velocity,
                     obj_count = sphere_count, max_obj_count = max_spheres
                 )
 
@@ -345,9 +498,9 @@ def time_sphere_remove():
                 index_to_remove = np.random.randint(1, sphere_count)
 
                 sphere_count = remove_dynamic_object(
-                    index=index_to_remove, 
-                    pos_x=sphere_x, pos_y=sphere_y,
-                    vel_x = sphere_velocity_x, vel_y = sphere_velocity_y,
+                    index = index_to_remove, 
+                    pos = sphere_position,
+                    vel = sphere_velocity,
                     obj_count = sphere_count
                 )
     
@@ -362,18 +515,16 @@ def time_sphere_remove():
 def test_sphere_remove():
 
     max_spheres = 10
-    sphere_x = np.full(max_spheres, np.nan, dtype=np.float32)
-    sphere_y = np.full(max_spheres, np.nan, dtype=np.float32)
-    sphere_velocity_x = np.full(max_spheres, np.nan, dtype=np.float32)
-    sphere_velocity_y = np.full(max_spheres, np.nan, dtype=np.float32)
+    sphere_position = np.full(2 * max_spheres, np.nan, dtype=np.float32)
+    sphere_velocity = np.full(2 * max_spheres, np.nan, dtype=np.float32)
     sphere_count = 0
 
     for i in range(10):
         
         sphere_count = add_dynamic_object(
             new_x = i, new_y = 2 * i, 
-            pos_x = sphere_x, pos_y = sphere_y, 
-            vel_x = sphere_velocity_x, vel_y = sphere_velocity_y,
+            pos = sphere_position,
+            vel = sphere_velocity,
             obj_count = sphere_count, max_obj_count = max_spheres
         )
     
@@ -385,46 +536,33 @@ def test_sphere_remove():
 
         sphere_count = remove_dynamic_object(
             index=index_to_remove, 
-            pos_x=sphere_x, pos_y=sphere_y,
-            vel_x = sphere_velocity_x, vel_y = sphere_velocity_y,
+            pos = sphere_position,
+            vel = sphere_velocity,
             obj_count = sphere_count
         )
 
         print_data(
-            sphere_count, sphere_x, sphere_y, sphere_velocity_x, sphere_velocity_y
+            sphere_count, sphere_position, sphere_velocity
         )
 
 def time_sphere_update():
 
-    x = np.array([10 ** i for i in range(1,5)])
+    x = np.array([100 * i for i in range(1,11)])
     y = np.zeros_like(x,dtype=np.float32)
     for j in range(x.size):
         max_spheres = int(x[j])
         print(f"Updating {max_spheres} spheres.")
         for _ in range(100):
 
-            sphere_x = np.array(
+            sphere_position = np.array(
                 [
                     np.random.uniform(low=SPHERE_RADIUS, high=TABLE_LENGTH - SPHERE_RADIUS)
-                    for _ in range(max_spheres)
-                ], dtype=np.float32
-            )
-            sphere_y = np.array(
-                [
-                    np.random.uniform(low=SPHERE_RADIUS, high=TABLE_WIDTH - SPHERE_RADIUS)
-                    for _ in range(max_spheres)
-                ], dtype=np.float32
-            )
-            sphere_velocity_x = np.array(
+                    for _ in range(2 * max_spheres)
+                ], dtype=np.float32)
+            sphere_velocity = np.array(
                 [
                     np.random.uniform(low=-1.0, high=1.0)
-                    for _ in range(max_spheres)
-                ], dtype=np.float32
-            )
-            sphere_velocity_y = np.array(
-                [
-                    np.random.uniform(low=-1.0, high=1.0)
-                    for _ in range(max_spheres)
+                    for _ in range(2 * max_spheres)
                 ], dtype=np.float32
             )
             sphere_count = max_spheres
@@ -433,8 +571,8 @@ def time_sphere_update():
             
             update_dynamic_objects(
                 dt=1.0, 
-                pos_x=sphere_x, pos_y=sphere_y,
-                vel_x = sphere_velocity_x, vel_y = sphere_velocity_y,
+                pos=sphere_position,
+                vel = sphere_velocity,
                 obj_count = sphere_count
             )
     
@@ -449,119 +587,88 @@ def time_sphere_update():
 def test_sphere_movement():
     
     max_spheres = 5
-    sphere_x = np.array(
+    sphere_position = np.array(
         [
             0.2 * i
-            for i in range(max_spheres)
+            for i in range(2 * max_spheres)
         ], dtype=np.float32
     )
-    sphere_y = np.array(
-        [
-            0.2 * i
-            for i in range(max_spheres)
-        ], dtype=np.float32
-    )
-    sphere_velocity_x = np.array(
+    sphere_velocity = np.array(
         [
             np.random.uniform(low=-1.0, high=1.0)
-            for _ in range(max_spheres)
-        ], dtype=np.float32
-    )
-    sphere_velocity_y = np.array(
-        [
-            np.random.uniform(low=-1.0, high=1.0)
-            for _ in range(max_spheres)
+            for _ in range(2 * max_spheres)
         ], dtype=np.float32
     )
     sphere_count = max_spheres
 
     print_data(
-        sphere_count, sphere_x, sphere_y, sphere_velocity_x, sphere_velocity_y
+        sphere_count, sphere_position, sphere_velocity
     )
 
     update_dynamic_objects(
         dt=1.0, 
-        pos_x=sphere_x, pos_y=sphere_y,
-        vel_x = sphere_velocity_x, vel_y = sphere_velocity_y,
+        pos = sphere_position,
+        vel = sphere_velocity,
         obj_count = sphere_count
     )
     
     print_data(
-        sphere_count, sphere_x, sphere_y, sphere_velocity_x, sphere_velocity_y
+        sphere_count, sphere_position, sphere_velocity
     )
 
 def test_sphere_rebound():
     
     max_spheres = 4
-    sphere_x = np.array(
+    sphere_position = np.array(
         [
-            0.1, 1.0, 1.0, 3.5
+            0.1, 1.0, 1.0, 0.1, 1.0, 1.7, 3.5, 1.0
         ], dtype=np.float32
     )
-    sphere_y = np.array(
+    sphere_velocity = np.array(
         [
-            1.0, 0.1, 1.7, 1.0
-        ], dtype=np.float32
-    )
-    sphere_velocity_x = np.array(
-        [
-            -1.0, 0.0, 0.0, 1.0
-        ], dtype=np.float32
-    )
-    sphere_velocity_y = np.array(
-        [
-            0.0, -1.0, 1.0, 0.0
+            -1.0, 0.0, 0.0, -1.0, 0.0, 1.0, 1.0, 0.0
         ], dtype=np.float32
     )
     sphere_count = max_spheres
 
     print_data(
-        sphere_count, sphere_x, sphere_y, sphere_velocity_x, sphere_velocity_y
+        sphere_count, sphere_position, sphere_velocity
     )
 
     update_dynamic_objects(
         dt=1.0, 
-        pos_x=sphere_x, pos_y=sphere_y,
-        vel_x = sphere_velocity_x, vel_y = sphere_velocity_y,
+        pos = sphere_position,
+        vel = sphere_velocity,
         obj_count = sphere_count
     )
     
     print_data(
-        sphere_count, sphere_x, sphere_y, sphere_velocity_x, sphere_velocity_y
+        sphere_count, sphere_position, sphere_velocity
     )
 
 def time_sphere_collide():
 
-    x = np.array([10 ** i for i in range(1,5)])
+    x = np.array([100 * i for i in range(1,11)])
     y = np.zeros_like(x,dtype=np.float32)
     for j in range(x.size):
         max_spheres = int(x[j])
         print(f"Collision-Checking {max_spheres} spheres.")
         for _ in range(100):
 
-            sphere_x = np.array(
-                [
-                    np.random.uniform(low=SPHERE_RADIUS, high=TABLE_LENGTH - SPHERE_RADIUS)
-                    for _ in range(max_spheres)
-                ], dtype=np.float32
-            )
-            sphere_y = np.array(
+            sphere_position = np.array(
                 [
                     np.random.uniform(low=SPHERE_RADIUS, high=TABLE_WIDTH - SPHERE_RADIUS)
-                    for _ in range(max_spheres)
-                ], dtype=np.float32
-            )
+                    for _ in range(2 * max_spheres)
+                ], dtype=np.float32)
             sphere_count = max_spheres
             interaction_count = int(((max_spheres - 1) * max_spheres) / 2)
-            sphere_collision_indices_a = np.full(interaction_count, -1, dtype=np.int64)
-            sphere_collision_indices_b = np.full(interaction_count, -1, dtype=np.int64)
+            sphere_collision_indices = np.full(2 * interaction_count, -1, dtype=np.int64)
 
             start = time.time()
             
             record_sphere_collisions_within_group(
-                pos_x=sphere_x, pos_y=sphere_y,
-                collision_indices_a = sphere_collision_indices_a,
-                collision_indices_b = sphere_collision_indices_b,
+                pos=sphere_position,
+                collision_indices=sphere_collision_indices,
                 obj_count = sphere_count
             )
     
@@ -576,90 +683,68 @@ def time_sphere_collide():
 def test_sphere_collide():
     
     max_spheres = 4
-    sphere_x = np.array(
+    sphere_pos = np.array(
         [
-            1.0, 1.1, 1.0, 3.5
+            1.0, 1.0, 1.1, 1.0, 1.0, 1.7, 3.5, 1.0
         ], dtype=np.float32
     )
-    sphere_y = np.array(
+    sphere_velocity = np.array(
         [
-            1.0, 1.0, 1.7, 1.0
-        ], dtype=np.float32
-    )
-    sphere_velocity_x = np.array(
-        [
-            0.05, -0.05, 0.0, 1.0
-        ], dtype=np.float32
-    )
-    sphere_velocity_y = np.array(
-        [
-            0.0, 0.0, 1.0, 0.0
+            0.05, 0.0, -0.05, 0.0, 0.0, 1.0, 1.0, 0.0
         ], dtype=np.float32
     )
     sphere_count = max_spheres
 
     interaction_count = int(((max_spheres - 1) * max_spheres) / 2)
-    sphere_collision_indices_a = np.full(interaction_count, -1, dtype=np.int64)
-    sphere_collision_indices_b = np.full(interaction_count, -1, dtype=np.int64)
+    sphere_collision_indices = np.full(2 * interaction_count, -1, dtype=np.int64)
 
     print_data(
-        sphere_count, sphere_x, sphere_y, sphere_velocity_x, sphere_velocity_y
+        sphere_count, sphere_pos, sphere_velocity
     )
 
     update_dynamic_objects(
         dt=1.0, 
-        pos_x=sphere_x, pos_y=sphere_y,
-        vel_x = sphere_velocity_x, vel_y = sphere_velocity_y,
+        pos=sphere_pos,
+        vel = sphere_velocity,
         obj_count = sphere_count
     )
 
     collision_count = record_sphere_collisions_within_group(
-        pos_x = sphere_x, pos_y = sphere_y,
-        collision_indices_a = sphere_collision_indices_a,
-        collision_indices_b = sphere_collision_indices_b,
+        pos = sphere_pos,
+        collision_indices = sphere_collision_indices,
         obj_count = sphere_count
     )
     
     print_data(
-        sphere_count, sphere_x, sphere_y, sphere_velocity_x, sphere_velocity_y
+        sphere_count, sphere_pos, sphere_velocity
     )
 
     print(f"{collision_count} collision(s)")
-    print(sphere_collision_indices_a)
-    print(sphere_collision_indices_b)
+    print(sphere_collision_indices)
 
 def time_sphere_collide_brute_force():
 
-    x = np.array([10 ** i for i in range(1,5)])
+    x = np.array([100 * i for i in range(1,11)])
     y = np.zeros_like(x,dtype=np.float32)
     for j in range(x.size):
         max_spheres = int(x[j])
         print(f"Collision-Checking {max_spheres} spheres.")
         for _ in range(100):
 
-            sphere_x = np.array(
-                [
-                    np.random.uniform(low=SPHERE_RADIUS, high=TABLE_LENGTH - SPHERE_RADIUS)
-                    for _ in range(max_spheres)
-                ], dtype=np.float32
-            )
-            sphere_y = np.array(
+            sphere_position = np.array(
                 [
                     np.random.uniform(low=SPHERE_RADIUS, high=TABLE_WIDTH - SPHERE_RADIUS)
-                    for _ in range(max_spheres)
-                ], dtype=np.float32
-            )
+                    for _ in range(2 * max_spheres)
+                ], dtype=np.float32)
             sphere_count = max_spheres
             interaction_count = int(((max_spheres - 1) * max_spheres) / 2)
-            sphere_collision_indices_a = np.full(interaction_count, -1, dtype=np.int64)
-            sphere_collision_indices_b = np.full(interaction_count, -1, dtype=np.int64)
+            sphere_collision_indices = np.full(2 * interaction_count, -1, dtype=np.int64)
 
             start = time.time()
             
             record_sphere_collisions_brute_force(
-                pos_x=sphere_x, pos_y=sphere_y,
-                collision_indices_a = sphere_collision_indices_a,
-                collision_indices_b = sphere_collision_indices_b,
+                pos=sphere_position,
+                collision_indices=sphere_collision_indices,
                 obj_count = sphere_count
             )
     
@@ -674,57 +759,44 @@ def time_sphere_collide_brute_force():
 def test_sphere_collide_brute_force():
     
     max_spheres = 4
-    sphere_x = np.array(
+    sphere_pos = np.array(
         [
-            1.0, 1.1, 1.0, 3.5
+            1.0, 1.0, 1.1, 1.0, 1.0, 1.7, 3.5, 1.0
         ], dtype=np.float32
     )
-    sphere_y = np.array(
+    sphere_velocity = np.array(
         [
-            1.0, 1.0, 1.7, 1.0
-        ], dtype=np.float32
-    )
-    sphere_velocity_x = np.array(
-        [
-            0.05, -0.05, 0.0, 1.0
-        ], dtype=np.float32
-    )
-    sphere_velocity_y = np.array(
-        [
-            0.0, 0.0, 1.0, 0.0
+            0.05, 0.0, -0.05, 0.0, 0.0, 1.0, 1.0, 0.0
         ], dtype=np.float32
     )
     sphere_count = max_spheres
 
     interaction_count = int(((max_spheres - 1) * max_spheres) / 2)
-    sphere_collision_indices_a = np.full(interaction_count, -1, dtype=np.int64)
-    sphere_collision_indices_b = np.full(interaction_count, -1, dtype=np.int64)
+    sphere_collision_indices = np.full(2 * interaction_count, -1, dtype=np.int64)
 
     print_data(
-        sphere_count, sphere_x, sphere_y, sphere_velocity_x, sphere_velocity_y
+        sphere_count, sphere_pos, sphere_velocity
     )
 
     update_dynamic_objects(
         dt=1.0, 
-        pos_x=sphere_x, pos_y=sphere_y,
-        vel_x = sphere_velocity_x, vel_y = sphere_velocity_y,
+        pos=sphere_pos,
+        vel = sphere_velocity,
         obj_count = sphere_count
     )
 
     collision_count = record_sphere_collisions_brute_force(
-        pos_x = sphere_x, pos_y = sphere_y,
-        collision_indices_a = sphere_collision_indices_a,
-        collision_indices_b = sphere_collision_indices_b,
+        pos = sphere_pos,
+        collision_indices = sphere_collision_indices,
         obj_count = sphere_count
     )
     
     print_data(
-        sphere_count, sphere_x, sphere_y, sphere_velocity_x, sphere_velocity_y
+        sphere_count, sphere_pos, sphere_velocity
     )
 
     print(f"{collision_count} collision(s)")
-    print(sphere_collision_indices_a)
-    print(sphere_collision_indices_b)
+    print(sphere_collision_indices)
 
 if __name__ == "__main__":
 
