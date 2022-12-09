@@ -2,8 +2,8 @@ from config import *
 import control
 
 def main():
-    initialize_pygame()
-    myApp = control.GameApp()
+    window = initialize_glfw()
+    myApp = control.GameApp(window)
     result = RETURN_ACTION_CONTINUE
     while(result == RETURN_ACTION_CONTINUE):
         result = myApp.mainLoop()

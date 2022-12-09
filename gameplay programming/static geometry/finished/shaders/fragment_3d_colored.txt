@@ -1,10 +1,11 @@
 #version 330 core
 
 uniform vec3 objectColor;
+uniform float alpha;
 
 out vec4 final_color;
 
 void main()
 {
-	final_color = vec4(objectColor,1.0);
+	final_color = vec4(objectColor, alpha);
 }

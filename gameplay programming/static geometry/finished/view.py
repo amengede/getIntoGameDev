@@ -1,4 +1,9 @@
 from config import *
+import geometry
+import static_geometry
+import model
+
+static_geometry_model = static_geometry.static_geometry_model
 
 class ObjModel:
 
@@ -9,6 +14,10 @@ class ObjModel:
             load_model_from_file(folderpath, filename),
             dtype=np.float32
         )
+        self.vertex_count = int(len(self.vertices)/8)
+        self.positions = np.zeros(self.vertex_count * 3, dtype = np.float32)
+        for i in range(self.vertex_count):
+            self.positions[3*i:3*(i + 1)] = self.vertices[8 * i:8* i + 3]
 
         #vertex array object, all that stuff
         self.vao = glGenVertexArrays(1)
@@ -17,7 +26,6 @@ class ObjModel:
         self.vbo = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER,self.vbo)
         glBufferData(GL_ARRAY_BUFFER,self.vertices.nbytes,self.vertices,GL_STATIC_DRAW)
-        self.vertex_count = int(len(self.vertices)/8)
 
         #position attribute
         glEnableVertexAttribArray(0)
@@ -48,39 +56,46 @@ class CubeMapMaterial:
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
         #load textures
-        image = pg.image.load(f"{filepath}_left.png").convert_alpha()
-        image_width,image_height = image.get_rect().size
-        img_data = pg.image.tostring(image,'RGBA')
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,0,GL_RGBA8,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
+        with Image.open(f"{filepath}_left.png", mode = "r") as img:
+            image_width,image_height = img.size
+            img = img.convert('RGBA')
+            img_data = bytes(img.tobytes())
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,0,GL_RGBA8,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
+        
+        with Image.open(f"{filepath}_right.png", mode = "r") as img:
+            image_width,image_height = img.size
+            img = ImageOps.flip(img)
+            img = ImageOps.mirror(img)
+            img = img.convert('RGBA')
+            img_data = bytes(img.tobytes())
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y,0,GL_RGBA8,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
+        
+        with Image.open(f"{filepath}_top.png", mode = "r") as img:
+            image_width,image_height = img.size
+            img = img.rotate(90)
+            img = img.convert('RGBA')
+            img_data = bytes(img.tobytes())
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z,0,GL_RGBA8,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
 
-        image = pg.image.load(f"{filepath}_right.png").convert_alpha()
-        image = pg.transform.flip(image,True,True)
-        image_width,image_height = image.get_rect().size
-        img_data = pg.image.tostring(image,'RGBA')
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y,0,GL_RGBA8,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
+        with Image.open(f"{filepath}_bottom.png", mode = "r") as img:
+            image_width,image_height = img.size
+            img = img.convert('RGBA')
+            img_data = bytes(img.tobytes())
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,0,GL_RGBA8,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
+        
+        with Image.open(f"{filepath}_back.png", mode = "r") as img:
+            image_width,image_height = img.size
+            img = img.rotate(-90)
+            img = img.convert('RGBA')
+            img_data = bytes(img.tobytes())
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X,0,GL_RGBA8,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
 
-        image = pg.image.load(f"{filepath}_top.png").convert_alpha()
-        image = pg.transform.rotate(image, 90)
-        image_width,image_height = image.get_rect().size
-        img_data = pg.image.tostring(image,'RGBA')
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z,0,GL_RGBA8,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
-
-        image = pg.image.load(f"{filepath}_bottom.png").convert_alpha()
-        image_width,image_height = image.get_rect().size
-        img_data = pg.image.tostring(image,'RGBA')
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,0,GL_RGBA8,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
-
-        image = pg.image.load(f"{filepath}_back.png").convert_alpha()
-        image = pg.transform.rotate(image, -90)
-        image_width,image_height = image.get_rect().size
-        img_data = pg.image.tostring(image,'RGBA')
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X,0,GL_RGBA8,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
-
-        image = pg.image.load(f"{filepath}_front.png").convert_alpha()
-        image = pg.transform.rotate(image, 90)
-        image_width,image_height = image.get_rect().size
-        img_data = pg.image.tostring(image,'RGBA')
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X,0,GL_RGBA8,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
+        with Image.open(f"{filepath}_front.png", mode = "r") as img:
+            image_width,image_height = img.size
+            img = img.rotate(90)
+            img = img.convert('RGBA')
+            img_data = bytes(img.tobytes())
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X,0,GL_RGBA8,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
 
     def use(self):
         glActiveTexture(GL_TEXTURE0)
@@ -96,8 +111,9 @@ class CubeMapModel:
 
         # x, y, z
         self.vertices = (
-             l/2,  w/2, -h/2,
+            
             -l/2,  w/2, -h/2,
+             l/2,  w/2, -h/2,
             -l/2, -w/2, -h/2,
 
              l/2,  w/2, -h/2,
@@ -161,15 +177,61 @@ class CubeMapModel:
         glDeleteVertexArrays(1, (self.vao,))
         glDeleteBuffers(1, (self.vbo,))
 
+class CubeWireframeModel:
+
+    
+    def __init__(self, l, w, h):
+
+        # x, y, z
+        self.vertices = (
+            -l / 2, -w / 2, -h / 2,  l / 2, -w / 2, -h / 2,
+            -l / 2, -w / 2, -h / 2, -l / 2,  w / 2, -h / 2,
+            -l / 2, -w / 2, -h / 2, -l / 2, -w / 2,  h / 2,
+
+             l / 2, -w / 2, -h / 2,  l / 2,  w / 2, -h / 2,
+             l / 2, -w / 2, -h / 2,  l / 2, -w / 2,  h / 2,
+
+            -l / 2,  w / 2, -h / 2,  l / 2,  w / 2, -h / 2,
+            -l / 2,  w / 2, -h / 2, -l / 2,  w / 2,  h / 2,
+
+             l / 2,  w / 2, -h / 2,  l / 2,  w / 2,  h / 2,
+
+            -l / 2, -w / 2,  h / 2,  l / 2, -w / 2,  h / 2,
+            -l / 2, -w / 2,  h / 2, -l / 2,  w / 2,  h / 2,
+
+             l / 2,  w / 2,  h / 2, -l / 2,  w / 2,  h / 2,
+             l / 2,  w / 2,  h / 2,  l / 2, -w / 2,  h / 2,
+        )
+        self.vertex_count = len(self.vertices)//3
+        self.vertices = np.array(self.vertices, dtype=np.float32)
+
+        self.vao = glGenVertexArrays(1)
+        glBindVertexArray(self.vao)
+        self.vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
+
+        glEnableVertexAttribArray(0)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 12, ctypes.c_void_p(0))
+
+    def destroy(self):
+
+        glDeleteVertexArrays(1, (self.vao,))
+        glDeleteBuffers(1, (self.vbo,))
+
 class GameRenderer:
 
 
-    def __init__(self):
+    def __init__(self, window):
+
+        self.window = window
 
         glEnable(GL_CULL_FACE)
         glCullFace(GL_BACK)
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         
         self.create_shaders()
         self.set_onetime_shader_data()
@@ -214,6 +276,7 @@ class GameRenderer:
         self.model_location["colored"] = glGetUniformLocation(self.shader3DColored, "model")
         self.view_location["colored"] = glGetUniformLocation(self.shader3DColored, "view")
         self.color_location = glGetUniformLocation(self.shader3DColored, "objectColor")
+        self.alpha_location = glGetUniformLocation(self.shader3DColored, "alpha")
 
         glUseProgram(self.shader3DCubemap)
         self.model_location["cubemap"] = glGetUniformLocation(self.shader3DCubemap, "model")
@@ -225,53 +288,87 @@ class GameRenderer:
         self.ground_debug_model = ObjModel("models", "ground.obj")
         self.skyBoxMaterial = CubeMapMaterial("gfx/sky")
         self.skyBoxModel = CubeMapModel(200, 200, 200)
+        self.block_debug_model = CubeMapModel(8, 8, 1)
+        self.grid_debug_model = CubeWireframeModel(
+            geometry.grid.length,
+            geometry.grid.width,
+            geometry.grid.height
+        )
+    
+    def bake_geometry(self, blocks: list[model.Block], ground: model.Ground) -> None:
+
+        for block in blocks:
+            static_geometry_model.consume(
+                self.block_debug_model.vertices, 
+                block.modelTransform
+            )
+
+        static_geometry_model.consume(
+            self.ground_debug_model.positions,
+            ground.modelTransform
+        )
+        
+        static_geometry_model.finalize()
+        
+        self.block_debug_model.destroy()
+        self.ground_debug_model.destroy()
 
     def render(self, scene):
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glEnable(GL_DEPTH_TEST)
         glDisable(GL_CULL_FACE)
-
+        
         glUseProgram(self.shader3DCubemap)
         modelTransform = pyrr.matrix44.create_identity(dtype = np.float32)
-        """
         modelTransform = pyrr.matrix44.multiply(
             m1 = modelTransform,
             m2 = pyrr.matrix44.create_from_translation(
-                vec = scene.player.position - np.array([0,0,0.9], dtype=np.float32), 
+                vec = scene.player.box.center - np.array([0,0,0.9], dtype=np.float32), 
                 dtype = np.float32
             )
         )
-        """
         glUniformMatrix4fv(self.model_location["cubemap"], 1, GL_FALSE, modelTransform)
         glUniformMatrix4fv(self.view_location["cubemap"], 1, GL_FALSE, scene.camera.viewTransform)
         self.skyBoxMaterial.use()
         glBindVertexArray(self.skyBoxModel.vao)
         glDrawArrays(GL_TRIANGLES, 0, self.skyBoxModel.vertex_count)
-
+        
         glUseProgram(self.shader3DColored)
         glEnable(GL_CULL_FACE)
+        glUniform1f(self.alpha_location, 1.0)
         
         glUniformMatrix4fv(self.view_location["colored"], 1, GL_FALSE, scene.camera.viewTransform)
 
-        glUniformMatrix4fv(self.model_location["colored"], 1, GL_FALSE, scene.ground.modelTransform)
+        #static geometry
+        glBindVertexArray(static_geometry_model.vao)
+        glEnable(GL_CULL_FACE)
+        glUniformMatrix4fv(
+            self.model_location["colored"], 1, GL_FALSE, 
+            pyrr.matrix44.create_identity()
+        )
         glUniform3fv(self.color_location, 1, np.array([0.5, 0.5, 1.0], dtype=np.float32))
-        glBindVertexArray(self.ground_debug_model.vao)
-        glDrawArrays(GL_TRIANGLES, 0, self.ground_debug_model.vertex_count)
-
+        glDrawArrays(GL_TRIANGLES, 0, static_geometry_model.vertex_count)
+        
+        #player
         glUniformMatrix4fv(self.model_location["colored"], 1, GL_FALSE, scene.player.modelTransform)
         glUniform3fv(self.color_location, 1, scene.player.color)
+        cam_to_player_dist = pyrr.vector.length(scene.camera.position - scene.player.box.center)
+        if cam_to_player_dist < 3.2:
+            alpha = max(0.0, (1.0 - abs(cam_to_player_dist / 1.6))**2)
+            glUniform1f(self.alpha_location, alpha)
         glBindVertexArray(self.player_debug_model.vao)
         glDrawArrays(GL_TRIANGLES, 0, self.player_debug_model.vertex_count)
+        glEnable(GL_CULL_FACE)
 
-        pg.display.flip()
+        #glfw.swap_buffers(self.window)
+        glFlush()
 
     def destroy(self):
 
         self.player_debug_model.destroy()
-        self.ground_debug_model.destroy()
         self.skyBoxMaterial.destroy()
-        self.skyBoxModel.destroy()
+        static_geometry_model.destroy()
         
         glDeleteProgram(self.shader3DColored)
         glDeleteProgram(self.shader3DCubemap)
