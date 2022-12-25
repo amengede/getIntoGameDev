@@ -4,6 +4,13 @@
 //namespace for creation functions/definitions etc.
 namespace vkInit {
 
+	/**
+		Create a Vulkan instance.
+
+		\param debug whether the system is being run in debug mode.
+		\param applicationName the name of the application.
+		\returns the instance created.
+	*/
 	vk::Instance make_instance(bool debug, const char* applicationName) {
 
 		if (debug) {
