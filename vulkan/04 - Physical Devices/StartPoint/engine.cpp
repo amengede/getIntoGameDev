@@ -60,9 +60,7 @@ Engine::~Engine() {
 		std::cout << "Goodbye see you!\n";
 	}
 
-	if (debugMode) {
-		instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, dldi);
-	}
+	instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, dldi);
 	/*
 	* from vulkan_funcs.hpp:
 	* 

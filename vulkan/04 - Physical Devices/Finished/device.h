@@ -14,6 +14,11 @@
 
 namespace vkInit {
 
+	/**
+		Print out the properties of the given physical device.
+
+		\param device the physical device to investigate
+	*/
 	void log_device_properties(const vk::PhysicalDevice& device) {
 		/*
 		* void vkGetPhysicalDeviceProperties(
@@ -63,6 +68,14 @@ namespace vkInit {
 		}
 	}
 
+	/**
+		Check whether the physical device can support the given extensions.
+
+		\param device the physical device to check
+		\param requestedExtensions a list of extension names to check against
+		\param debug whether the system is running in debug mode
+		\returns whether all of the extensions are requested
+	*/
 	bool checkDeviceExtensionSupport(
 		const vk::PhysicalDevice& device,
 		const std::vector<const char*>& requestedExtensions,
@@ -94,6 +107,13 @@ namespace vkInit {
 		return requiredExtensions.empty();
 	}
 
+	/**
+		Check whether the given physical device is suitable for the system.
+
+		\param device the physical device to check.
+		\debug whether the system is running in debug mode.
+		\returns whether the device is suitable.
+	*/
 	bool isSuitable(const vk::PhysicalDevice& device, const bool debug) {
 
 		if (debug) {
@@ -134,6 +154,13 @@ namespace vkInit {
 		return true;
 	}
 
+	/**
+		Choose a physical device for the vulkan instance.
+
+		\param instance the vulkan instance to use
+		\param debug whether the system is running in debug mode
+		\returns the chosen physical device
+	*/
 	vk::PhysicalDevice choose_physical_device(const vk::Instance& instance, const bool debug) {
 
 		/*
