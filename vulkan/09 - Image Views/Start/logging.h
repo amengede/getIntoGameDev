@@ -37,6 +37,16 @@ namespace vkInit {
 		} VkDebugUtilsMessengerCallbackDataEXT;
 
 	*/
+
+	/**
+		Logging callback function.
+
+		\param messageSeverity describes the severity level of the message
+		\param messageType describes the type of the message
+		\param pCallbackData standard data associated with the message
+		\param pUserData custom extra data which can be associated with the message
+		\returns whether to end program execution
+	*/
 	VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -48,6 +58,13 @@ namespace vkInit {
 		return VK_FALSE;
 	}
 
+	/**
+		Make a debug messenger
+
+		\param instance The Vulkan instance which will be debugged.
+		\param dldi dynamically loads instance based dispatch functions
+		\returns the created messenger
+	*/
 	vk::DebugUtilsMessengerEXT make_debug_messenger(vk::Instance& instance, vk::DispatchLoaderDynamic& dldi) {
 
 		/*
@@ -69,6 +86,12 @@ namespace vkInit {
 		return instance.createDebugUtilsMessengerEXT(createInfo, nullptr, dldi);
 	}
 
+	/**
+		Extract the transforms from the given bitmask.
+
+		\param bits a bitmask describing various transforms
+		\returns a vector of strings describing the transforms
+	*/
 	std::vector<std::string> log_transform_bits(vk::SurfaceTransformFlagsKHR bits) {
 		std::vector<std::string> result;
 
@@ -116,6 +139,12 @@ namespace vkInit {
 		return result;
 	}
 
+	/**
+		Extract the alpha composite blend modes from the given bitmask.
+
+		\param bits a bitmask describing a combination of alpha composite options.
+		\returns a vector of strings describing the options.
+	*/
 	std::vector<std::string> log_alpha_composite_bits(vk::CompositeAlphaFlagsKHR bits) {
 		std::vector<std::string> result;
 
@@ -143,6 +172,12 @@ namespace vkInit {
 		return result;
 	}
 
+	/**
+		Extract image usage options.
+
+		\param bits a bitmask describing various image usages
+		\returns a vector of strings describing the image usages
+	*/
 	std::vector<std::string> log_image_usage_bits(vk::ImageUsageFlags bits) {
 		std::vector<std::string> result;
 
@@ -235,6 +270,9 @@ suitable for use as a fragment shading rate attachment or shading rate image");
 		return result;
 	}
 
+	/**
+		\returns a string description of the given present mode.
+	*/
 	std::string log_present_mode(vk::PresentModeKHR presentMode) {
 		/*
 		* // Provided by VK_KHR_surface
