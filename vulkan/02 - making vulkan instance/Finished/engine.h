@@ -24,8 +24,14 @@ private:
 	vk::Instance instance{ nullptr };
 
 	//glfw setup
+	/**
+		Build the GLFW window.
+	*/
 	void build_glfw_window();
 
 	//instance setup
+	/**
+		Create the Vulkan instance.
+	*/
 	void make_instance();
 };
