@@ -15,28 +15,36 @@
 
 namespace vkInit {
 
+	/**
+		Holds the indices of the graphics and presentation queue families.
+	*/
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphicsFamily;
 		std::optional<uint32_t> presentFamily;
 
+		/**
+			\returns whether all of the Queue family indices have been set.
+		*/
 		bool isComplete() {
 			return graphicsFamily.has_value() && presentFamily.has_value();
 		}
 	};
 
-	/*
-	* Holds properties of the swapchain
-	* capabilities: no. of images and supported sizes
-	* formats: eg. supported pixel formats
-	* present modes: available presentation modes (eg. double buffer, fifo, mailbox)
+	/**
+		Holds properties of the swapchain
+		capabilities: no. of images and supported sizes
+		formats: eg. supported pixel formats
+		present modes: available presentation modes (eg. double buffer, fifo, mailbox)
 	*/
-
 	struct SwapChainSupportDetails {
 		vk::SurfaceCapabilitiesKHR capabilities;
 		std::vector<vk::SurfaceFormatKHR> formats;
 		std::vector<vk::PresentModeKHR> presentModes;
 	};
 
+	/**
+		Various data structures associated with the swapchain.
+	*/
 	struct SwapChainBundle {
 		vk::SwapchainKHR swapchain;
 		std::vector<vk::Image> images;
@@ -44,6 +52,11 @@ namespace vkInit {
 		vk::Extent2D extent;
 	};
 
+	/**
+		Print out the properties of the given physical device.
+
+		\param device the physical device to investigate
+	*/
 	void log_device_properties(const vk::PhysicalDevice& device) {
 		/*
 		* void vkGetPhysicalDeviceProperties(
@@ -93,6 +106,14 @@ namespace vkInit {
 		}
 	}
 
+	/**
+		Check whether the physical device can support the given extensions.
+
+		\param device the physical device to check
+		\param requestedExtensions a list of extension names to check against
+		\param debug whether the system is running in debug mode
+		\returns whether all of the extensions are requested
+	*/
 	bool checkDeviceExtensionSupport(
 		const vk::PhysicalDevice& device,
 		const std::vector<const char*>& requestedExtensions,
@@ -124,6 +145,13 @@ namespace vkInit {
 		return requiredExtensions.empty();
 	}
 
+	/**
+		Choose a physical device for the vulkan instance.
+
+		\param instance the vulkan instance to use
+		\param debug whether the system is running in debug mode
+		\returns the chosen physical device
+	*/
 	bool isSuitable(const vk::PhysicalDevice& device, const bool debug) {
 
 		if (debug) {
@@ -164,6 +192,13 @@ namespace vkInit {
 		return true;
 	}
 
+	/**
+		Choose a physical device for the vulkan instance.
+
+		\param instance the vulkan instance to use
+		\param debug whether the system is running in debug mode
+		\returns the chosen physical device
+	*/
 	vk::PhysicalDevice choose_physical_device(const vk::Instance& instance, const bool debug) {
 
 		/*
@@ -204,6 +239,13 @@ namespace vkInit {
 		return nullptr;
 	}
 
+	/**
+		Find suitable queue family indices on the given physical device.
+
+		\param device the physical device to check
+		\param debug whether the system is running in debug mode
+		\returns a struct holding the queue family indices
+	*/
 	QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface, bool debug) {
 		QueueFamilyIndices indices;
 
@@ -274,6 +316,13 @@ namespace vkInit {
 		return indices;
 	}
 
+	/**
+		Create a Vulkan device
+
+		\param physicalDevice the Physical Device to represent
+		\param debug whether the system is running in debug mode
+		\returns the created device
+	*/
 	vk::Device create_logical_device(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, bool debug) {
 
 		/*
@@ -359,6 +408,14 @@ namespace vkInit {
 		return nullptr;
 	}
 
+	/**
+		Get the queues associated with the physical device.
+
+		\param physicalDevice the physical device
+		\param device the logical device
+		\param debug whether the system is running in debug mode
+		\returns the queues
+	*/
 	std::array<vk::Queue,2> get_queues(vk::PhysicalDevice physicalDevice, vk::Device device, vk::SurfaceKHR surface, bool debug) {
 
 		QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface, debug);
@@ -369,6 +426,14 @@ namespace vkInit {
 			} };
 	}
 
+	/**
+		Check the supported swapchain parameters
+
+		\param device the physical device
+		\param surface the window surface which will use the swapchain
+		\param debug whether the system is running in debug mode
+		\returns a struct holding the details
+	*/
 	SwapChainSupportDetails query_swapchain_support(vk::PhysicalDevice device, vk::SurfaceKHR surface, bool debug) {
 		SwapChainSupportDetails support;
 
@@ -463,6 +528,12 @@ namespace vkInit {
 		return support;
 	}
 
+	/**
+		Choose a surface format for the swapchain
+
+		\param formats a vector of surface formats supported by the device
+		\returns the chosen format
+	*/
 	vk::SurfaceFormatKHR choose_swapchain_surface_format(std::vector<vk::SurfaceFormatKHR> formats) {
 
 		for (vk::SurfaceFormatKHR format : formats) {
@@ -475,6 +546,12 @@ namespace vkInit {
 		return formats[0];
 	}
 
+	/**
+		Choose a present mode.
+
+		\param presentModes a vector of present modes supported by the device
+		\returns the chosen present mode
+	*/
 	vk::PresentModeKHR choose_swapchain_present_mode(std::vector<vk::PresentModeKHR> presentModes) {
 		
 		for (vk::PresentModeKHR presentMode : presentModes) {
@@ -486,6 +563,14 @@ namespace vkInit {
 		return vk::PresentModeKHR::eFifo;
 	}
 
+	/**
+		Choose an extent for the swapchain.
+
+		\param width the requested width
+		\param height the requested height
+		\param capabilities a struct describing the supported capabilities of the device
+		\returns the chosen extent
+	*/
 	vk::Extent2D choose_swapchain_extent(uint32_t width, uint32_t height, vk::SurfaceCapabilitiesKHR capabilities) {
 
 		if (capabilities.currentExtent.width != UINT32_MAX) {
@@ -508,6 +593,17 @@ namespace vkInit {
 		}
 	}
 
+	/**
+		Create a swapchain
+
+		\param logicalDevice the logical device
+		\param physicalDevice the physical device
+		\param surface the window surface to use the swapchain with
+		\param width the requested width
+		\param height the requested height
+		\param debug whether the system is running in debug mode
+		\returns a struct holding the swapchain and other associated data structures
+	*/
 	SwapChainBundle create_swapchain(vk::Device logicalDevice, vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, int width, int height, bool debug) {
 
 		SwapChainSupportDetails support = query_swapchain_support(physicalDevice, surface, debug);

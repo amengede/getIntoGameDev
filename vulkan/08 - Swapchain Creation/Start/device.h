@@ -14,15 +14,26 @@
 
 namespace vkInit {
 
+	/**
+		Holds the indices of the graphics and presentation queue families.
+	*/
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphicsFamily;
 		std::optional<uint32_t> presentFamily;
 
+		/**
+			\returns whether all of the Queue family indices have been set.
+		*/
 		bool isComplete() {
 			return graphicsFamily.has_value() && presentFamily.has_value();
 		}
 	};
 
+	/**
+		Print out the properties of the given physical device.
+
+		\param device the physical device to investigate
+	*/
 	void log_device_properties(const vk::PhysicalDevice& device) {
 		/*
 		* void vkGetPhysicalDeviceProperties(
@@ -72,6 +83,14 @@ namespace vkInit {
 		}
 	}
 
+	/**
+		Check whether the physical device can support the given extensions.
+
+		\param device the physical device to check
+		\param requestedExtensions a list of extension names to check against
+		\param debug whether the system is running in debug mode
+		\returns whether all of the extensions are requested
+	*/
 	bool checkDeviceExtensionSupport(
 		const vk::PhysicalDevice& device,
 		const std::vector<const char*>& requestedExtensions,
@@ -103,6 +122,13 @@ namespace vkInit {
 		return requiredExtensions.empty();
 	}
 
+	/**
+		Choose a physical device for the vulkan instance.
+
+		\param instance the vulkan instance to use
+		\param debug whether the system is running in debug mode
+		\returns the chosen physical device
+	*/
 	bool isSuitable(const vk::PhysicalDevice& device, const bool debug) {
 
 		if (debug) {
@@ -143,6 +169,13 @@ namespace vkInit {
 		return true;
 	}
 
+	/**
+		Choose a physical device for the vulkan instance.
+
+		\param instance the vulkan instance to use
+		\param debug whether the system is running in debug mode
+		\returns the chosen physical device
+	*/
 	vk::PhysicalDevice choose_physical_device(const vk::Instance& instance, const bool debug) {
 
 		/*
@@ -183,6 +216,13 @@ namespace vkInit {
 		return nullptr;
 	}
 
+	/**
+		Find suitable queue family indices on the given physical device.
+
+		\param device the physical device to check
+		\param debug whether the system is running in debug mode
+		\returns a struct holding the queue family indices
+	*/
 	QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface, bool debug) {
 		QueueFamilyIndices indices;
 
@@ -253,6 +293,13 @@ namespace vkInit {
 		return indices;
 	}
 
+	/**
+		Create a Vulkan device
+
+		\param physicalDevice the Physical Device to represent
+		\param debug whether the system is running in debug mode
+		\returns the created device
+	*/
 	vk::Device create_logical_device(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, bool debug) {
 
 		/*
@@ -331,6 +378,14 @@ namespace vkInit {
 		return nullptr;
 	}
 
+	/**
+		Get the queues associated with the physical device.
+
+		\param physicalDevice the physical device
+		\param device the logical device
+		\param debug whether the system is running in debug mode
+		\returns the queues
+	*/
 	std::array<vk::Queue,2> get_queues(vk::PhysicalDevice physicalDevice, vk::Device device, vk::SurfaceKHR surface, bool debug) {
 
 		QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface, debug);
