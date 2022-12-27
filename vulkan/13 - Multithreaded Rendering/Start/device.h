@@ -16,6 +16,14 @@
 
 namespace vkInit {
 
+	/**
+		Check whether the physical device can support the given extensions.
+
+		\param device the physical device to check
+		\param requestedExtensions a list of extension names to check against
+		\param debug whether the system is running in debug mode
+		\returns whether all of the extensions are requested
+	*/
 	bool checkDeviceExtensionSupport(
 		const vk::PhysicalDevice& device,
 		const std::vector<const char*>& requestedExtensions,
@@ -47,6 +55,13 @@ namespace vkInit {
 		return requiredExtensions.empty();
 	}
 
+	/**
+		Check whether the given physical device is suitable for use.
+
+		\param device the physical device
+		\param debug whether the system is running in debug mode
+		\returns whether the device is suitable
+	*/
 	bool isSuitable(const vk::PhysicalDevice& device, const bool debug) {
 
 		if (debug) {
@@ -86,7 +101,14 @@ namespace vkInit {
 		}
 		return true;
 	}
+	
+	/**
+		Choose a physical device for the vulkan instance.
 
+		\param instance the vulkan instance to use
+		\param debug whether the system is running in debug mode
+		\returns the chosen physical device
+	*/
 	vk::PhysicalDevice choose_physical_device(const vk::Instance& instance, const bool debug) {
 
 		/*
@@ -127,6 +149,13 @@ namespace vkInit {
 		return nullptr;
 	}
 
+	/**
+		Create a Vulkan device
+
+		\param physicalDevice the Physical Device to represent
+		\param debug whether the system is running in debug mode
+		\returns the created device
+	*/
 	vk::Device create_logical_device(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, bool debug) {
 
 		/*
@@ -212,6 +241,14 @@ namespace vkInit {
 		return nullptr;
 	}
 
+	/**
+		Get the queues associated with the physical device.
+
+		\param physicalDevice the physical device
+		\param device the logical device
+		\param debug whether the system is running in debug mode
+		\returns the queues
+	*/
 	std::array<vk::Queue,2> get_queues(vk::PhysicalDevice physicalDevice, vk::Device device, vk::SurfaceKHR surface, bool debug) {
 
 		vkUtil::QueueFamilyIndices indices = vkUtil::findQueueFamilies(physicalDevice, surface, debug);
