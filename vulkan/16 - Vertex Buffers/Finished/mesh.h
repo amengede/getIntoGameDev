@@ -4,8 +4,7 @@
 namespace vkMesh {
 
 	/**
-	* Get the input binding description for a
-	* (vec2 pos, vec3 color) vertex format.
+		\returns the input binding description for a (vec2 pos, vec3 color) vertex format.
 	*/
 	vk::VertexInputBindingDescription getPosColorBindingDescription() {
 
@@ -26,8 +25,7 @@ namespace vkMesh {
 	}
 
 	/**
-	* Get the input attribute descriptions for a
-	* (vec2 pos, vec3 color) vertex format.
+		\returns the input attribute descriptions for a (vec2 pos, vec3 color) vertex format.
 	*/
 	std::array<vk::VertexInputAttributeDescription,2> getPosColorAttributeDescriptions() {
 

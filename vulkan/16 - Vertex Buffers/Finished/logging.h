@@ -4,7 +4,13 @@
 namespace vkInit {
 
 	/**
-	* Debug call back function, called by validation layers
+		Logging callback function.
+
+		\param messageSeverity describes the severity level of the message
+		\param messageType describes the type of the message
+		\param pCallbackData standard data associated with the message
+		\param pUserData custom extra data which can be associated with the message
+		\returns whether to end program execution
 	*/
 	VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -54,11 +60,11 @@ namespace vkInit {
 	}
 
 	/**
-	* Make a debug messenger
-	* 
-	* @param instance	the vulkan instance which will own/call the messenger
-	* @param dldi		the dispatch loader used to call the creation function
-	* @return			the created debug messenger
+		Make a debug messenger
+
+		\param instance The Vulkan instance which will be debugged.
+		\param dldi dynamically loads instance based dispatch functions
+		\returns the created messenger
 	*/
 	vk::DebugUtilsMessengerEXT make_debug_messenger(vk::Instance& instance, vk::DispatchLoaderDynamic& dldi) {
 
@@ -82,10 +88,10 @@ namespace vkInit {
 	}
 
 	/**
-	* Extract the transform types contained within the given bitmask
-	* 
-	* @param bits	the bitmask which holds various transforms
-	* @return		a vector of strings describing the transforms
+		Extract the transforms from the given bitmask.
+
+		\param bits a bitmask describing various transforms
+		\returns a vector of strings describing the transforms
 	*/
 	std::vector<std::string> log_transform_bits(vk::SurfaceTransformFlagsKHR bits) {
 		std::vector<std::string> result;
@@ -135,10 +141,10 @@ namespace vkInit {
 	}
 
 	/**
-	* Extract the alpha composite types contained within the given bitmask
-	*
-	* @param bits	the bitmask which holds various alpha composite modes
-	* @return		a vector of strings describing the alpha composite modes
+		Extract the alpha composite blend modes from the given bitmask.
+
+		\param bits a bitmask describing a combination of alpha composite options.
+		\returns a vector of strings describing the options.
 	*/
 	std::vector<std::string> log_alpha_composite_bits(vk::CompositeAlphaFlagsKHR bits) {
 		std::vector<std::string> result;
@@ -168,10 +174,10 @@ namespace vkInit {
 	}
 
 	/**
-	* Extract the image usages contained within the given bitmask
-	*
-	* @param bits	the bitmask which holds various image usages
-	* @return		a vector of strings describing the image usages
+		Extract image usage options.
+
+		\param bits a bitmask describing various image usages
+		\returns a vector of strings describing the image usages
 	*/
 	std::vector<std::string> log_image_usage_bits(vk::ImageUsageFlags bits) {
 		std::vector<std::string> result;
@@ -266,10 +272,7 @@ suitable for use as a fragment shading rate attachment or shading rate image");
 	}
 
 	/**
-	* Translate the given present mode to a dexcriptive string
-	*
-	* @param presentMode	an enum which describes the present mode
-	* @return				a description of the present mode
+		\returns a string description of the given present mode.
 	*/
 	std::string log_present_mode(vk::PresentModeKHR presentMode) {
 		/*
@@ -341,9 +344,9 @@ This mode may result in visible tearing if rendering to the image is not timed c
 	}
 
 	/**
-	* Print out some properties of a physical device
-	*
-	* @param device the physical device
+		Print out the properties of the given physical device.
+
+		\param device the physical device to investigate
 	*/
 	void log_device_properties(const vk::PhysicalDevice& device) {
 		/*

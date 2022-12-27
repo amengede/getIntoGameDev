@@ -7,13 +7,7 @@
 namespace vkInit {
 
 	/**
-	* Holds input fields for pipeline creation
-	* 
-	* @param device					the logical device
-	* @param vertexFilepath			location of the vertex shader spir-v file
-	* @param fragmentFilepath		location of the fragment shader spir-v file
-	* @param swapchainExtent		size of the swapchain images
-	* @param swapchainImageFormat	the pixel format of the swapchain iamges
+		holds the data structures used to create a pipeline
 	*/
 	struct GraphicsPipelineInBundle {
 		vk::Device device;
@@ -24,11 +18,8 @@ namespace vkInit {
 	};
 
 	/**
-	* Holds the various outputs resulting from pipeline creation
-	* 
-	* @param layout		the graphics pipeline
-	* @param renderpass the renderpass for the pipeline
-	* @param pipeline	the graphics pipeline
+		Used for returning the pipeline, along with associated data structures,
+		after creation.
 	*/
 	struct GraphicsPipelineOutBundle {
 		vk::PipelineLayout layout;
@@ -37,11 +28,12 @@ namespace vkInit {
 	};
 
 	/**
-	* Make the layout for the graphics pipeline
-	* 
-	* @param device	the logical device
-	* @param debug	whether to print extra information
-	* @return		the pipeline layout
+		Make a pipeline layout, this consists mostly of describing the
+		push constants and descriptor set layouts which will be used.
+
+		\param device the logical device
+		\param debug whether the system is running in debug mode
+		\returns the created pipeline layout
 	*/
 	vk::PipelineLayout make_pipeline_layout(vk::Device device, bool debug) {
 
@@ -67,12 +59,13 @@ namespace vkInit {
 	}
 
 	/**
-	* Make the renderpass for the swapchain
-	* 
-	* @param						device the logical device
-	* @param swapchainImageFormat	the pixel format of the swapchain images
-	* @param debug					whether to print extra information
-	* @return						the created renderpass
+		Make a renderpass, a renderpass describes the subpasses involved
+		as well as the attachments which will be used.
+
+		\param device the logical device
+		\param swapchainImageFormat the image format chosen for the swapchain images
+		\param debug whether the system is running in debug mode
+		\returns the created renderpass
 	*/
 	vk::RenderPass make_renderpass(vk::Device device, vk::Format swapchainImageFormat, bool debug) {
 
@@ -119,11 +112,11 @@ namespace vkInit {
 	}
 	
 	/**
-	* Create a graphics pipeline
-	* 
-	* @param specification	holds the various required input fields
-	* @param debug			whether to print extra information
-	* @return				the various created objects
+		Make a graphics pipeline, along with renderpass and pipeline layout
+
+		\param specification the struct holding input data, as specified at the top of the file.
+		\param debug whether the system is running in debug mode
+		\returns the bundle of data structures created
 	*/
 	GraphicsPipelineOutBundle create_graphics_pipeline(GraphicsPipelineInBundle& specification, bool debug) {
 		/*

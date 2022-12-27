@@ -4,7 +4,7 @@
 namespace vkUtil {
 
 	/**
-	* Holds the indices of various physical device queues
+		Holds the indices of the graphics and presentation queue families.
 	*/
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphicsFamily;
@@ -16,12 +16,11 @@ namespace vkUtil {
 	};
 
 	/**
-	* Find the indices for various queue families, selecting the appropriate ones
-	* 
-	* @param device		the physical device
-	* @param surface	handle to the vulkan surface
-	* @param debug		whether to print extra information
-	* @return			a struct holding the indices of the queue families
+		Find suitable queue family indices on the given physical device.
+
+		\param device the physical device to check
+		\param debug whether the system is running in debug mode
+		\returns a struct holding the queue family indices
 	*/
 	QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface, bool debug) {
 		QueueFamilyIndices indices;
