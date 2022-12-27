@@ -213,7 +213,7 @@ void Engine::record_draw_commands(vk::CommandBuffer commandBuffer, uint32_t imag
 void Engine::render(Scene* scene) {
 
 	device.waitForFences(1, &(swapchainFrames[frameNumber].inFlight), VK_TRUE, UINT64_MAX);
-	
+	device.resetFences(1, &(swapchainFrames[frameNumber].inFlight));
 
 	//acquireNextImageKHR(vk::SwapChainKHR, timeout, semaphore_to_signal, fence)
 	uint32_t imageIndex;
@@ -258,8 +258,6 @@ void Engine::render(Scene* scene) {
 	vk::Semaphore signalSemaphores[] = { swapchainFrames[frameNumber].renderFinished };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
-
-	device.resetFences(1, &(swapchainFrames[frameNumber].inFlight));
 
 	try {
 		graphicsQueue.submit(submitInfo, swapchainFrames[frameNumber].inFlight);
