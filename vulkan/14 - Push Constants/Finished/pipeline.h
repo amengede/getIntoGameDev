@@ -5,6 +5,9 @@
 
 namespace vkInit {
 
+	/**
+		holds the data structures used to create a pipeline
+	*/
 	struct GraphicsPipelineInBundle {
 		vk::Device device;
 		std::string vertexFilepath;
@@ -13,12 +16,24 @@ namespace vkInit {
 		vk::Format swapchainImageFormat;
 	};
 
+	/**
+		Used for returning the pipeline, along with associated data structures,
+		after creation.
+	*/
 	struct GraphicsPipelineOutBundle {
 		vk::PipelineLayout layout;
 		vk::RenderPass renderpass;
 		vk::Pipeline pipeline;
 	};
 
+	/**
+		Make a pipeline layout, this consists mostly of describing the
+		push constants and descriptor set layouts which will be used.
+
+		\param device the logical device
+		\param debug whether the system is running in debug mode
+		\returns the created pipeline layout
+	*/
 	vk::PipelineLayout make_pipeline_layout(vk::Device device, bool debug) {
 
 		vk::PipelineLayoutCreateInfo layoutInfo;
@@ -42,6 +57,15 @@ namespace vkInit {
 		}
 	}
 
+	/**
+		Make a renderpass, a renderpass describes the subpasses involved
+		as well as the attachments which will be used.
+
+		\param device the logical device
+		\param swapchainImageFormat the image format chosen for the swapchain images
+		\param debug whether the system is running in debug mode
+		\returns the created renderpass
+	*/
 	vk::RenderPass make_renderpass(vk::Device device, vk::Format swapchainImageFormat, bool debug) {
 
 		//Define a general attachment, with its load/store operations
@@ -86,6 +110,13 @@ namespace vkInit {
 
 	}
 	
+	/**
+		Make a graphics pipeline, along with renderpass and pipeline layout
+
+		\param specification the struct holding input data, as specified at the top of the file.
+		\param debug whether the system is running in debug mode
+		\returns the bundle of data structures created
+	*/
 	GraphicsPipelineOutBundle create_graphics_pipeline(GraphicsPipelineInBundle& specification, bool debug) {
 		/*
 		* Build and return a graphics pipeline based on the given info.

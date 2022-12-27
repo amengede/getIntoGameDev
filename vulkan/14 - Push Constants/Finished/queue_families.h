@@ -3,15 +3,28 @@
 
 namespace vkUtil {
 
+	/**
+		Holds the indices of the graphics and presentation queue families.
+	*/
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphicsFamily;
 		std::optional<uint32_t> presentFamily;
 
+		/**
+			\returns whether all of the Queue family indices have been set.
+		*/
 		bool isComplete() {
 			return graphicsFamily.has_value() && presentFamily.has_value();
 		}
 	};
 
+	/**
+		Find suitable queue family indices on the given physical device.
+
+		\param device the physical device to check
+		\param debug whether the system is running in debug mode
+		\returns a struct holding the queue family indices
+	*/
 	QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface, bool debug) {
 		QueueFamilyIndices indices;
 
