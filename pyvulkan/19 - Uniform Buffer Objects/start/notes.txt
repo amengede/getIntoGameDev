@@ -1,0 +1,9 @@
+1. memory.py -> BufferInput
+2. memory.py -> allocate_buffer_memory
+3. vertex_menagerie -> create staging buffer
+4. vertex_menagerie -> copy lump to staging buffer
+5. vertex_menagerie -> create vertex buffer
+6. memory.py -> copy_buffer
+7. vertex_menagerie -> vertex_buffer_finalization_chunk
+8. engine.py -> make_assets
+9. vertex_menagerie -> finish finalization
