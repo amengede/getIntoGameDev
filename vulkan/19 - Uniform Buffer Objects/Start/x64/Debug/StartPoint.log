@@ -1,0 +1,11 @@
+﻿  engine.cpp
+D:\dev\vulkan\19 - Uniform Buffer Object\Start\view\vkInit\pipeline.h(156,48): warning C4267: '=': conversion from 'size_t' to 'uint32_t', possible loss of data
+D:\dev\vulkan\19 - Uniform Buffer Object\Start\view\vkInit\pipeline.h(254,22): warning C4244: '=': conversion from 'float' to 'int32_t', possible loss of data
+D:\dev\vulkan\19 - Uniform Buffer Object\Start\view\vkInit\pipeline.h(255,22): warning C4244: '=': conversion from 'float' to 'int32_t', possible loss of data
+D:\dev\vulkan\19 - Uniform Buffer Object\Start\view\vkInit\framebuffer.h(26,56): warning C4267: '=': conversion from 'size_t' to 'uint32_t', possible loss of data
+D:\dev\vulkan\19 - Uniform Buffer Object\Start\view\engine.cpp(312,22): warning C4834: discarding return value of function with 'nodiscard' attribute
+D:\dev\vulkan\19 - Uniform Buffer Object\Start\view\engine.cpp(313,20): warning C4834: discarding return value of function with 'nodiscard' attribute
+D:\dev\vulkan\19 - Uniform Buffer Object\Start\view\vkUtil\shaders.h(57): warning C4715: 'vkUtil::createModule': not all control paths return a value
+D:\dev\vulkan\19 - Uniform Buffer Object\Start\view\vkInit\pipeline.h(339): warning C4715: 'vkInit::make_pipeline_layout': not all control paths return a value
+D:\dev\vulkan\19 - Uniform Buffer Object\Start\view\vkInit\pipeline.h(371): warning C4715: 'vkInit::make_renderpass': not all control paths return a value
+  StartPoint.vcxproj -> D:\dev\vulkan\19 - Uniform Buffer Object\Start\x64\Debug\StartPoint.exe
