@@ -1,1 +1,0 @@
-D:\dev\vulkan\19 - Uniform Buffer Object\Start\x64\Debug\StartPoint.exe
