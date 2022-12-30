@@ -53,12 +53,6 @@ void vkLogging::Logger::print_list(std::vector<std::string> items) {
 		bool debugMode;
 */
 
-/**
-* Extract the transform types contained within the given bitmask
-*
-* @param bits	the bitmask which holds various transforms
-* @return		a vector of strings describing the transforms
-*/
 std::vector<std::string> vkLogging::log_transform_bits(vk::SurfaceTransformFlagsKHR bits) {
 	std::vector<std::string> result;
 
