@@ -6,11 +6,7 @@
 namespace vkInit {
 
 	/**
-	* Various fields used to create a command buffer
-	* 
-	* device:		the logical device used by the engine
-	* commandPool:	allocates command buffers
-	* frames:		the swapchain frames to be populated with command buffers
+		Data structures used in creating command buffers
 	*/
 	struct commandBufferInputChunk {
 		vk::Device device; 
@@ -19,14 +15,12 @@ namespace vkInit {
 	};
 
 	/**
-	* Make a command pool
-	* 
-	* @param device				the logical device
-	* @param physicalDevice		the physical device
-	* @param surface			the vulkan surface 
-								(used for fetching the graphics queue family index)
-	* @param debug				whether to print extra information
-	* @return					the created command pool
+		Make a command pool.
+
+		\param device the logical device
+		\param physicalDevice the physical device
+		\param surface the windows surface (used for getting the queue families)
+		\returns the created command pool
 	*/
 	vk::CommandPool make_command_pool(vk::Device device, vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface) {
 
@@ -48,11 +42,10 @@ namespace vkInit {
 	}
 	
 	/**
-	* Make a main command buffer for one-off jobs
-	* 
-	* @param	inputChunk the various fields
-	* @param	debug whether to print extra information
-	* @return	the main command buffer for the engine
+		Make a main command buffer.
+
+		\param inputChunk the required input info
+		\returns the main command buffer
 	*/
 	vk::CommandBuffer make_command_buffer(commandBufferInputChunk inputChunk) {
 
@@ -79,11 +72,9 @@ namespace vkInit {
 	}
 
 	/**
-	* Make a command buffer for each frame
-	*
-	* @param	inputChunk the various fields
-	* @param	debug whether to print extra information
-	* @return	the main command buffer for the engine
+		Make a command buffer for each frame
+
+		\param inputChunk the required input info
 	*/
 	void make_frame_command_buffers(commandBufferInputChunk inputChunk) {
 

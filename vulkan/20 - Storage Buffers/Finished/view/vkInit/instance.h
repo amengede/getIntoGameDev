@@ -5,6 +5,13 @@
 //namespace for creation functions/definitions etc.
 namespace vkInit {
 
+	/**
+		Check whether the requested extensions and layers are supported.
+
+		\param extensions a list of extension names being requested.
+		\param layers a list of layer names being requested.
+		\returns whether all of the extensions and layers are supported.
+	*/
 	bool supported(std::vector<const char*>& extensions, std::vector<const char*>& layers) {
 		
 		std::stringstream message;
@@ -68,6 +75,12 @@ namespace vkInit {
 		return true;
 	}
 
+	/**
+		Create a Vulkan instance.
+
+		\param applicationName the name of the application.
+		\returns the instance created.
+	*/
 	vk::Instance make_instance(const char* applicationName) {
 
 		vkLogging::Logger::get_logger()->print("Making an instance...");
