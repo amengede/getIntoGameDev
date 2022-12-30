@@ -6,11 +6,10 @@
 namespace vkInit {
 
 	/**
-	* Holds properties of the swapchain
-	* 
-	* capabilities:		no. of images and supported sizes
-	* formats:			eg. supported pixel formats
-	* present modes:	available presentation modes (eg. double buffer, fifo, mailbox)
+		Holds properties of the swapchain
+		capabilities: no. of images and supported sizes
+		formats: eg. supported pixel formats
+		present modes: available presentation modes (eg. double buffer, fifo, mailbox)
 	*/
 	struct SwapChainSupportDetails {
 		vk::SurfaceCapabilitiesKHR capabilities;
@@ -19,12 +18,7 @@ namespace vkInit {
 	};
 
 	/**
-	* Holds the standard fields set by swapchain creation (or recreation)
-	* 
-	* swapchain:	the swapchain handle
-	* frames:		the frames used in the swapchain
-	* format:		pixel format of the swapchain images
-	* extent:		the size of the swapchain images
+		Various data structures associated with the swapchain.
 	*/
 	struct SwapChainBundle {
 		vk::SwapchainKHR swapchain;
@@ -34,12 +28,11 @@ namespace vkInit {
 	};
 
 	/**
-	* Check which properties the device can support for its swapchain.
-	* 
-	* @param device		the physical device which is being used.
-	* @param surface	the surface to which the swapchain will be presented
-	* @param debug		whether to print extra information
-	* @return			a struct holding all the supported parameters.
+		Check the supported swapchain parameters
+
+		\param device the physical device
+		\param surface the window surface which will use the swapchain
+		\returns a struct holding the details
 	*/
 	SwapChainSupportDetails query_swapchain_support(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
 		SwapChainSupportDetails support;
@@ -128,10 +121,10 @@ namespace vkInit {
 	}
 
 	/**
-	* Choose a pixel format for the swapchain.
-	* 
-	* @param	formats a vector of supported pixel formats
-	* @return	the selected format
+		Choose a surface format for the swapchain
+
+		\param formats a vector of surface formats supported by the device
+		\returns the chosen format
 	*/
 	vk::SurfaceFormatKHR choose_swapchain_surface_format(std::vector<vk::SurfaceFormatKHR> formats) {
 
@@ -146,10 +139,10 @@ namespace vkInit {
 	}
 
 	/**
-	* Choose a presentation mode for the swapchain
-	* 
-	* @param	presentModes a vector of supported presentation modes
-	* @return	the selected presentation mode
+		Choose a present mode.
+
+		\param presentModes a vector of present modes supported by the device
+		\returns the chosen present mode
 	*/
 	vk::PresentModeKHR choose_swapchain_present_mode(std::vector<vk::PresentModeKHR> presentModes) {
 
@@ -163,12 +156,12 @@ namespace vkInit {
 	}
 
 	/**
-	* Choose an extent (image size) for the swapchain
-	* 
-	* @param	width requested image width
-	* @param	height the requested image height
-	* @param	capabilities the supported details (used to validate/clamp size)
-	* @return	the selected extent for the swapchain
+		Choose an extent for the swapchain.
+
+		\param width the requested width
+		\param height the requested height
+		\param capabilities a struct describing the supported capabilities of the device
+		\returns the chosen extent
 	*/
 	vk::Extent2D choose_swapchain_extent(uint32_t width, uint32_t height, vk::SurfaceCapabilitiesKHR capabilities) {
 
@@ -193,15 +186,14 @@ namespace vkInit {
 	}
 
 	/**
-	* Create a swapchain
-	* 
-	* @param	logicalDevice the logical device
-	* @param	physicalDevice the physical device
-	* @param	surface the surface to present to
-	* @param	width the width of the window
-	* @param	height the height of the window
-	* @param	debug whether to print extra information
-	* @return	the various components of the swapchain
+		Create a swapchain
+
+		\param logicalDevice the logical device
+		\param physicalDevice the physical device
+		\param surface the window surface to use the swapchain with
+		\param width the requested width
+		\param height the requested height
+		\returns a struct holding the swapchain and other associated data structures
 	*/
 	SwapChainBundle create_swapchain(vk::Device logicalDevice, vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, int width, int height) {
 
