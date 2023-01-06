@@ -1,0 +1,49 @@
+//multiple descriptor set layouts
+1. Write new shaders, recompile.
+2. Make descriptor set layouts for the frame and material bindings.
+3. Pass both descriptor set layouts in pipeline creation.
+4. At frame creation, make sure the correct layout variable is sent. Same at cleanup.
+
+//asset creation
+5. in create_assets, make a dictionary mapping object types to filenames.
+6. create a mesh descriptor pool
+7. make a texture class, right now it just takes the device, descriptor set layout, descriptor pool and filename.
+8. write those into a materials dictionary.
+
+//asset use
+9. Now make a render_objects function for the renderer, bind the appropriate material in this function
+
+//texture class
+10. write out stubs for the class functions
+11. in render_objects, use the material
+12. in close, destroy all the materials
+
+//load image from file
+13. import image
+14. write the texture's load function
+
+//make vk image and memory
+15. Make "make_image" and "make_image_memory" function, use them in the constructor
+16. Destroy the image and memory in the destructor
+
+//Populate image
+17. Make a staging buffer, the texture create info will now need a physical device
+18. Make a start_job and end_job function, these can use the code from memory.copy_buffer
+19. Use this in the transition_image_layout function, texture create info will now need a commandBuffer and queue
+20. Make a copy_buffer_to_image function and use it
+
+//Make view
+21. Make a make_image_view function, this can use the code from make_swapchain
+22. Use the function to make a view, don't forget to destroy the view in cleanup
+
+//Make sampler
+23. Pretty straightforward, make the sampler, and destroy in cleanup
+
+//Make descriptor set
+24. The descriptor set should already be made, but it does need to be written to.
+
+//New attributes/data
+25. In mesh.py update the binding and attribute descriptions
+26. In vertex_menagerie.consume, change the vertexCount so we're consuming 7 floats per vertex
+27. Update vertexInputInfo in pipeline.py so it takes 3 vertexAttributeDescriptions
+28. Add new vertex data in make_assets
