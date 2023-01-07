@@ -153,6 +153,8 @@
     <ClCompile Include="control\app.cpp" />
     <ClCompile Include="control\logging.cpp" />
     <ClCompile Include="engine.cpp" />
+    <ClCompile Include="instance.cpp" />
+    <ClCompile Include="logging.cpp" />
     <ClCompile Include="model\vertex_menagerie.cpp" />
     <ClCompile Include="view\engine.cpp" />
     <ClCompile Include="main.cpp" />
