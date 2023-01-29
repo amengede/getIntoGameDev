@@ -4,6 +4,169 @@ from OpenGL.GL.shaders import compileProgram,compileShader
 import numpy as np
 import pyrr
 
+def loadMesh(filename: str) -> tuple[list[int], list[float]]:
+    """
+        Read an obj file.
+
+        Parameters:
+            filename: The path to an obj file
+
+        Returns:
+            the indices and vertices as lists
+    """
+
+    #raw, unassembled data
+    v: list[list[float]] = []
+    vt: list[list[float]] = []
+    vn: list[list[float]] = []
+
+    #for checking unique vertices
+    vertexLookup: dict[tuple[int], int] = {}
+    
+    #final, assembled and packed result
+    vertices = []
+    indices = []
+
+    #open the obj file and read the data
+    with open(filename,'r') as file:
+
+        line = file.readline()
+        while line:
+
+            match line[0:line.find(" ")]:
+                
+                case "v":
+                    read_vertex_entry(line, v)
+                case "vt":
+                    read_vertex_texture_entry(line, vt)
+                case "vn":
+                    read_vertex_normal_entry(line, vn)
+                case "f":
+                    read_face_entry(line, 
+                        v, vt, vn, 
+                        vertexLookup, 
+                        indices, vertices
+                    )
+                case _:
+                    pass
+            line = file.readline()
+        return (indices, vertices)
+
+def read_vertex_entry(line: str, v: list[list[float]]) -> None:
+    """
+        Read an obj vertex line and append to a list.
+
+        Parameters:
+            line: The line to read, should be in the form
+            "v x y z"
+
+            v: The list to accumulate vertex data in, should be in the form
+            [[x1,y1,z1], [x2,y2,z2], ...]
+    """
+
+    #print(v)
+    line = line.replace("v ","")
+    line = line.split(" ")
+    v.append([float(x) for x in line])
+
+def read_vertex_texture_entry(line: str, vt: list[list[float]]) -> None:
+    """
+        Read an obj tex coordinate line and append to a list.
+
+        Parameters:
+            line: The line to read, should be in the form
+            "vt u v"
+
+            vt: The list to accumulate texcoord data in, should be in the form
+            [[u1,v1], [u2,v2], ...]
+    """
+
+    #print(vt)
+    line = line.replace("vt ","")
+    line = line.split(" ")
+    vt.append([float(x) for x in line])
+
+def read_vertex_normal_entry(line: str, vn: list[list[float]]) -> None:
+    """
+        Read an obj normal line and append to a list.
+
+        Parameters:
+            line: The line to read, should be in the form
+            "vn x y z"
+
+            vn: The list to accumulate normal data in, should be in the form
+            [[x1,y1,z1], [x2,y2,z2], ...]
+    """
+
+    #print(vn)
+    line = line.replace("vn ","")
+    line = line.split(" ")
+    vn.append([float(x) for x in line])
+
+def read_face_entry(
+    line: str, 
+    v: list[list[float]], vt: list[list[float]], vn: list[list[float]], 
+    vertexLookup: dict[tuple[int], int], 
+    indices: list[int], vertices: list[float]) -> None:
+    """
+        Read an obj face entry, assemble the described face, and store its data.
+
+        Parameters:
+            line: The line, should be of the form
+            "f v1/vt1/vn1 v2/vt2/vn2 ..."
+
+            v: The list of vertices stored so far, should be of the form
+            [[x1,y1,z1], [x2,y2,z2], ...]
+
+            vt: The list of tex coords stored so far, should be of the form
+            [[u1,v1], [u2,v2], ...]
+
+            vn: The list of normals stored to far, should be of the form
+            [[x1,y1,z1], [x2,y2,z2], ...]
+
+            vertexLookup: A dictionary storing the index of the given (v,vt,vn)
+            tuple in the vertices list, if it's been seen before.
+
+            indices: The final list of indices
+
+            vertices: The final list of vertices
+    """
+
+    #print(vertices)
+    #print(indices)
+
+    line = line.replace("f ","")
+    line = line.replace("\n","")
+    line = line.split(" ")
+    points = []
+    for combo in line:
+        components = combo.split("/")
+        point = (int(components[0]) - 1, int(components[1]) - 1, int(components[2]) - 1)
+        points.append(point)
+    
+    #assemble face, obj file uses triangle fan format for each face individually.
+    triangleCount = len(line) - 2
+    unfannedPointIndices = []
+    """
+        eg. 0,1,2,3 unpacks to vertices: [0,1,2,0,2,3]
+    """
+    for i in range(triangleCount):
+        unfannedPointIndices.append(0)
+        unfannedPointIndices.append(i+1)
+        unfannedPointIndices.append(i+2)
+    
+    #check each point
+    for pointIndex in unfannedPointIndices:
+        point = points[pointIndex]
+        if point in vertexLookup:
+            indices.append(vertexLookup[point])
+        else:
+            vertexLookup[point] = int(len(vertices)//8)
+            indices.append(vertexLookup[point])
+            vertices.extend(v[point[0]])
+            vertices.extend(vt[point[1]])
+            vertices.extend(vn[point[2]])
+    
 class Cube:
 
 
@@ -99,7 +262,7 @@ class App:
             glUniformMatrix4fv(self.modelMatrixLocation,1,GL_FALSE,model_transform)
             self.wood_texture.use()
             glBindVertexArray(self.cube_mesh.vao)
-            glDrawArrays(GL_TRIANGLES, 0, self.cube_mesh.vertex_count)
+            glDrawElements(GL_TRIANGLES, self.cube_mesh.indexCount, GL_UNSIGNED_INT, 0)
 
             pg.display.flip()
 
@@ -114,14 +277,19 @@ class App:
         pg.quit()
 
 class Mesh:
+
     def __init__(self, filename):
         # x, y, z, s, t, nx, ny, nz
-        self.vertices = self.loadMesh(filename)
+        self.indices, self.vertices = loadMesh(filename)
         self.vertex_count = len(self.vertices)//8
+        self.indexCount = len(self.indices)
         self.vertices = np.array(self.vertices, dtype=np.float32)
+        self.indices = np.array(self.indices, dtype=np.uint32)
 
         self.vao = glGenVertexArrays(1)
         glBindVertexArray(self.vao)
+
+        #Vertices
         self.vbo = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
         glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
@@ -131,85 +299,15 @@ class Mesh:
         #texture
         glEnableVertexAttribArray(1)
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
-    
-    def loadMesh(self, filename):
 
-        #raw, unassembled data
-        v = []
-        vt = []
-        vn = []
-        
-        #final, assembled and packed result
-        vertices = []
-
-        #open the obj file and read the data
-        with open(filename,'r') as f:
-            line = f.readline()
-            while line:
-                firstSpace = line.find(" ")
-                flag = line[0:firstSpace]
-                if flag=="v":
-                    #vertex
-                    line = line.replace("v ","")
-                    line = line.split(" ")
-                    l = [float(x) for x in line]
-                    v.append(l)
-                elif flag=="vt":
-                    #texture coordinate
-                    line = line.replace("vt ","")
-                    line = line.split(" ")
-                    l = [float(x) for x in line]
-                    vt.append(l)
-                elif flag=="vn":
-                    #normal
-                    line = line.replace("vn ","")
-                    line = line.split(" ")
-                    l = [float(x) for x in line]
-                    vn.append(l)
-                elif flag=="f":
-                    #face, three or more vertices in v/vt/vn form
-                    line = line.replace("f ","")
-                    line = line.replace("\n","")
-                    #get the individual vertices for each line
-                    line = line.split(" ")
-                    faceVertices = []
-                    faceTextures = []
-                    faceNormals = []
-                    for vertex in line:
-                        #break out into [v,vt,vn],
-                        #correct for 0 based indexing.
-                        l = vertex.split("/")
-                        position = int(l[0]) - 1
-                        faceVertices.append(v[position])
-                        texture = int(l[1]) - 1
-                        faceTextures.append(vt[texture])
-                        normal = int(l[2]) - 1
-                        faceNormals.append(vn[normal])
-                    # obj file uses triangle fan format for each face individually.
-                    # unpack each face
-                    triangles_in_face = len(line) - 2
-
-                    vertex_order = []
-                    """
-                        eg. 0,1,2,3 unpacks to vertices: [0,1,2,0,2,3]
-                    """
-                    for i in range(triangles_in_face):
-                        vertex_order.append(0)
-                        vertex_order.append(i+1)
-                        vertex_order.append(i+2)
-                    for i in vertex_order:
-                        for x in faceVertices[i]:
-                            vertices.append(x)
-                        for x in faceTextures[i]:
-                            vertices.append(x)
-                        for x in faceNormals[i]:
-                            vertices.append(x)
-                line = f.readline()
-        return vertices
+        #Indices
+        self.ebo = glGenBuffers(1)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.ebo)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.indices.nbytes, self.indices, GL_STATIC_DRAW)
     
     def destroy(self):
         glDeleteVertexArrays(1, (self.vao,))
-        glDeleteBuffers(1,(self.vbo,))
+        glDeleteBuffers(2,(self.vbo, self.ebo))
 
 class Material:
 
