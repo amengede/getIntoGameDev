@@ -1,4 +1,4 @@
-# COSC3000 Practical 1:
+# Practical 1:
 ## Introduction to PyOpenGL, basic drawing and transformations
 
 Welcome to week 1! The goals of this week are:
