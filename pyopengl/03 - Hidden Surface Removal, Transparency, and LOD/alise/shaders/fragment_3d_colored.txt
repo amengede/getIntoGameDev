@@ -1,0 +1,15 @@
+#version 330 core
+
+in vec3 fragmentNormal;
+
+uniform vec3 objectColor;
+uniform float alpha;
+
+out vec4 final_color;
+
+void main()
+{
+	vec3 lightDirection = normalize(vec3(3, 1, 2));
+	float lightingAmount = max(0.0, dot(lightDirection, fragmentNormal));
+	final_color = vec4(lightingAmount * objectColor, alpha);
+}

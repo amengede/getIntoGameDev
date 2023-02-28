@@ -1,0 +1,16 @@
+#version 330 core
+
+layout (location=0) in vec3 vertexPos;
+layout (location=2) in vec3 vertexNormal;
+
+uniform mat4 model;
+uniform mat4 viewProjection;
+
+out vec2 fragmentTexCoord;
+out vec3 fragmentNormal;
+
+void main()
+{
+    gl_Position = viewProjection * model * vec4(vertexPos, 1.0);
+    fragmentNormal = mat3(model) * vertexNormal;
+}

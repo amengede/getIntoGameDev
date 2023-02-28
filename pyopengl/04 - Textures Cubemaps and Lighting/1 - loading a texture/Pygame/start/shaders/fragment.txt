@@ -1,0 +1,14 @@
+#version 330 core
+
+in vec2 fragmentTexCoord;
+
+//TODO: declare a uniform of type sampler2D, called imageTexture
+
+out vec4 color;
+
+void main()
+{
+    //TODO: use GLSL's texture function to sample from the
+    //      texture.
+    color = vec4(0.0);
+}

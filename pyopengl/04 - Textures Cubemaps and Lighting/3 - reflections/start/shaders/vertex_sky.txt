@@ -1,0 +1,15 @@
+#version 330 core
+
+layout (location=0) in vec2 vertexPos;
+
+//TODO: Take the camera's three fundamental vectors as uniforms
+
+out vec3 rayDirection;
+
+void main()
+{
+    gl_Position = vec4(vertexPos, 0.0, 1.0);
+    //TODO: use the vertexPos and the camera vectors to calculate
+    //      The direction of the camera looking through
+    //      this vertex.
+}

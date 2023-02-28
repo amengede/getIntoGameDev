@@ -1,0 +1,15 @@
+#version 330 core
+
+in vec3 fragmentNormal;
+
+uniform vec3 objectColor;
+uniform vec3 sunColor;
+uniform vec3 sunDirection;
+
+out vec4 color;
+
+void main()
+{
+    float lightingAmount = max(0,dot(fragmentNormal,-sunDirection));
+    color = lightingAmount * vec4(sunColor,1.0) * vec4(objectColor, 1.0);
+}

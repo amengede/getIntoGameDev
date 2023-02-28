@@ -1,0 +1,12 @@
+#version 330 core
+
+layout (location=0) in vec3 vertexPos;
+
+void main()
+{
+
+    //gl_Position is an inbuilt opengl variable,
+    // what is the purpose of that 1.0 on the end?
+    // try setting it to some various values.
+    gl_Position = vec4(vertexPos, 1.0);
+}

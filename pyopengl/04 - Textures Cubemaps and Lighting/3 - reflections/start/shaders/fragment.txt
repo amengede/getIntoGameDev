@@ -1,0 +1,29 @@
+#version 330 core
+
+in vec2 fragmentTexCoord;
+//TODO: take in the fragment normal and position from the
+// vertex shader
+
+//TODO: take in the sky texture as a uniform
+uniform sampler2D imageTexture;
+//TODO: take in the camera position in world space, as a uniform
+
+out vec4 color;
+
+void main()
+{
+    
+    //Task: calculate the color of the fragment.
+    //
+    //      find the direction vector from the viewer
+    //      to the fragment
+    //
+    //      reflect it around the fragment's normal
+    //
+    //      sample the sky based on this direction vector
+    //
+    //      multiply that with the regular sampled color of the
+    //      texture
+
+    color = texture(imageTexture, fragmentTexCoord);
+}
