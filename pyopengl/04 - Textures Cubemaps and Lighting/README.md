@@ -5,7 +5,6 @@ This practical is all about adding detail to our scenes. It will cover the follo
 - loading a texture
 - drawing a skybox
 - environmental sampling/reflections
-- bonus: lighting
 
 ### 1: Loading a Texture
 For completeness, this will be shown both in Pygame and GLFW, hopefully you'll see that the similarities outweigh the differences. Open up whichever folder you like and head to the Material class, the job of loading the file is prefilled, so let's focus on configuring the texture.\
