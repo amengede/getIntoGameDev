@@ -1,4 +1,4 @@
-# COSC3000 Practical 4:
+# Practical 4:
 ## Textures, Cubemaps and Reflections
 
 This practical is all about adding detail to our scenes. It will cover the following topics:
