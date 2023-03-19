@@ -1,6 +1,5 @@
-# COSC3000 Practical 2:
+# Practical 2:
 ## Cameras and Projections
-Hopefully the week 1 prac went ok. Don't worry if you didn't get it all done, finished code is provided and the most important thing is that you understood the concepts. \
 In this practical we'll drill down further into transformations, looking at coordinate spaces and how to change between them. \
 Bonus content will cover implementing first and third person cameras.
 ## Coordinate Spaces

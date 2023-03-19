@@ -1,6 +1,6 @@
-# COSC3000 Practical 3:
+# Practical 3:
 ## Hidden Surface Removal, Transparency, MSAA and LOD
-Welcome back! Hopefully last week went ok and you're confident setting up cameras, maybe you even have ideas for a camera you could use in your project. Anyway, the goals of this prac are:\
+Welcome back! Hopefully last week went ok and you're confident setting up cameras, maybe you even have ideas for a camera you could use in your project. Anyway, the goals of this prac are:
  - to examine and understand the depth buffer
  - to understand how to set up alpha blending
  - to understand how draw order affects results when transparency is added.
