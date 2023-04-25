@@ -25,19 +25,19 @@ struct RenderState {
 };
 
 // input/output
-layout(local_size_x = 1, local_size_y = 1) in;
+layout(local_size_x = 8, local_size_y = 8) in;
 layout(rgba32f, binding = 0) uniform image2D img_output;
 
 //Scene data
 uniform Camera viewer;
-layout(rgba32f, binding = 1) readonly uniform image2D spheres;
+layout(std430, binding = 1) buffer sceneData {
+    Sphere[] spheres;
+};
 uniform float sphereCount;
 
 vec3 rayColor(Ray ray);
 
-RenderState hit(Ray ray, Sphere sphere, float tMin, float tMax, RenderState renderstate);
-
-Sphere unpackSphere(int index);
+void hit(Ray ray, Sphere sphere, float tMin, float tMax, inout RenderState renderstate);
 
 void main() {
 
@@ -65,7 +65,7 @@ vec3 rayColor(Ray ray) {
     
     for (int i = 0; i < sphereCount; i++) {
 
-        renderState = hit(ray, unpackSphere(i), 0.001, nearestHit, renderState);
+        hit(ray, spheres[i], 0.001, nearestHit, renderState);
 
         if (renderState.hit) {
             nearestHit = renderState.t;
@@ -81,7 +81,7 @@ vec3 rayColor(Ray ray) {
     return color;
 }
 
-RenderState hit(Ray ray, Sphere sphere, float tMin, float tMax, RenderState renderState) {
+void hit(Ray ray, Sphere sphere, float tMin, float tMax, inout RenderState renderState) {
     vec3 co = ray.origin - sphere.center;
     float a = dot(ray.direction, ray.direction);
     float b = 2 * dot(ray.direction, co);
@@ -96,23 +96,9 @@ RenderState hit(Ray ray, Sphere sphere, float tMin, float tMax, RenderState rend
             renderState.t = t;
             renderState.color = sphere.color;
             renderState.hit = true;
-            return renderState;
+            return;
         }
     }
 
     renderState.hit = false;
-    return renderState;
-}
-
-Sphere unpackSphere(int index) {
-
-    Sphere sphere;
-    vec4 attributeChunk = imageLoad(spheres, ivec2(0,index));
-    sphere.center = attributeChunk.xyz;
-    sphere.radius = attributeChunk.w;
-    
-    attributeChunk = imageLoad(spheres, ivec2(1,index));
-    sphere.color = attributeChunk.xyz;
-
-    return sphere;
 }
