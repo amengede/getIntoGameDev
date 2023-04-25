@@ -11,7 +11,6 @@ class Camera:
 
             Parameters:
                 position (array [3,1])
-                direction (array [3,1])
         """
 
         self.position = np.array(position, dtype=np.float32)
@@ -29,6 +28,16 @@ class Camera:
             ], dtype=np.float32
         )
 
-        self.right = pyrr.vector3.cross(self.forwards, np.array([0,0,1],dtype=np.float32))
+        self.right = pyrr.vector.normalize(
+            pyrr.vector3.cross(
+                self.forwards, 
+                np.array([0,0,1],dtype=np.float32)
+            )
+        )
 
-        self.up = pyrr.vector3.cross(self.right, self.forwards)
+        self.up = pyrr.vector.normalize(
+            pyrr.vector3.cross(
+            self.right, 
+            self.forwards
+            )
+        )

@@ -5,7 +5,7 @@ class Sphere:
         Represents a sphere in the scene
     """
 
-    def __init__(self, center, radius, color):
+    def __init__(self, center: np.ndarray, radius: float, color: np.ndarray):
         """
             Create a new sphere
 
