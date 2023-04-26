@@ -5,7 +5,9 @@ class Sphere:
         Represents a sphere in the scene
     """
 
-    def __init__(self, center, radius, color, roughness):
+    def __init__(self, 
+        center: list[float], radius: float, 
+        color: list[float], roughness: float):
         """
             Create a new sphere
 
