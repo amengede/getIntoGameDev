@@ -6,7 +6,11 @@ class Plane:
     """
 
 
-    def __init__(self, normal, tangent, bitangent, uMin, uMax, vMin, vMax, center, color, roughness):
+    def __init__(
+        self, normal: list[float], tangent: list[float], 
+        bitangent: list[float], uMin: float, 
+        uMax: float, vMin: float, vMax: float, 
+        center: list[float], color: list[float], roughness: float):
         """
             Create a new plane
 
