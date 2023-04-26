@@ -14,7 +14,7 @@ class Material:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 
     
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, None)
+        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, width, height)
     
     def writeTo(self) -> None:
 

@@ -74,18 +74,16 @@ class Engine:
 
         glUseProgram(self.rayTracerShader)
 
-        glUniform1f(glGetUniformLocation(self.rayTracerShader, "sphereCount"), len(_scene.spheres))
-
         for i,_sphere in enumerate(_scene.spheres):
             self.sphereBuffer.recordSphere(i, _sphere)
-
-        glUniform1f(glGetUniformLocation(self.rayTracerShader, "planeCount"), len(_scene.planes))
 
         for i,_plane in enumerate(_scene.planes):
             self.planeBuffer.recordPlane(i, _plane)
 
         self.sphereBuffer.readFrom()
         self.planeBuffer.readFrom()
+
+        glUniform2iv(glGetUniformLocation(self.rayTracerShader, "objectCounts"), 1, _scene.objectCounts)
 
     def prepareScene(self, _scene: scene.Scene) -> None:
         """

@@ -75,7 +75,7 @@ class Engine:
         glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.right"), 1, _scene.camera.right)
         glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.up"), 1, _scene.camera.up)
 
-        glUniform1f(glGetUniformLocation(self.rayTracerShader, "sphereCount"), len(_scene.spheres))
+        glUniform1i(glGetUniformLocation(self.rayTracerShader, "sphereCount"), len(_scene.spheres))
 
         for i,_sphere in enumerate(_scene.spheres):
             glUniform3fv(glGetUniformLocation(self.rayTracerShader, f"spheres[{i}].center"), 1, _sphere.center)

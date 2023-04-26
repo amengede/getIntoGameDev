@@ -1,4 +1,8 @@
 from config import *
+import buffer
+import material
+import scene
+import screen_quad
 
 class Engine:
     """
@@ -13,85 +17,11 @@ class Engine:
                     width (int): width of screen
                     height (int): height of screen
         """
+
         self.screenWidth = width
         self.screenHeight = height
 
-        #general OpenGL configuration
-        self.shader = self.createShader("shaders/frameBufferVertex.txt",
-                                        "shaders/frameBufferFragment.txt")
-        
-        self.rayTracerShader = self.createComputeShader("shaders/rayTracer.txt")
-        
-        glUseProgram(self.shader)
-        
-        self.createQuad()
-        self.createColorBuffer()
-        self.createResourceMemory()
-    
-    def createQuad(self):
-        # x, y, z, s, t
-        self.vertices = np.array(
-            ( 1.0,  1.0, 0.0, 1.0, 1.0, #top-right
-             -1.0,  1.0, 0.0, 0.0, 1.0, #top-left
-             -1.0, -1.0, 0.0, 0.0, 0.0, #bottom-left
-             -1.0, -1.0, 0.0, 0.0, 0.0, #bottom-left
-              1.0, -1.0, 0.0, 1.0, 0.0, #bottom-right
-              1.0,  1.0, 0.0, 1.0, 1.0), #top-right
-             dtype=np.float32
-        )
-
-        self.vertex_count = 6
-
-        self.vao = glGenVertexArrays(1)
-        glBindVertexArray(self.vao)
-        self.vbo = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
-        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
-
-        glEnableVertexAttribArray(0)
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(1)
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(12))
-    
-    def createColorBuffer(self):
-
-        self.colorBuffer = glGenTextures(1)
-        glActiveTexture(GL_TEXTURE0)
-        glBindTexture(GL_TEXTURE_2D, self.colorBuffer)
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-
-    
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, self.screenWidth, self.screenHeight, 0, GL_RGBA, GL_FLOAT, None)
-    
-    def createResourceMemory(self):
-
-        """
-            allocate storage for up to 1024 objects (why not?)
-        """
-
-        objectData = []
-
-        # sphere: (cx cy cz r) (r g b -)     (- - - -)     (- - - -)             (- - - -)
-        # plane: (cx cy cz tx) (ty tz bx by) (bz nx ny nz) (umin umax vmin vmax) (r g b -)
-        for object in range(1024):
-            for attribute in range(20):
-                objectData.append(0.0)
-        self.objectData = np.array(objectData, dtype=np.float32)
-
-        self.objectDataTexture = glGenTextures(1)
-        glActiveTexture(GL_TEXTURE1)
-        glBindTexture(GL_TEXTURE_2D, self.objectDataTexture)
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-    
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA32F,5,1024,0,GL_RGBA,GL_FLOAT,bytes(self.objectData))
+        self.makeAssets()
     
     def createShader(self, vertexFilepath, fragmentFilepath):
         """
@@ -123,113 +53,76 @@ class Engine:
         
         return shader
 
-    def recordSphere(self, i, _sphere):
+    def makeAssets(self) -> None:
+        """ Make all the stuff. """
 
-        # sphere: (cx cy cz r) (r g b -) (- - - -) (- - - -) (- - - -)
+        self.screenQuad = screen_quad.ScreenQuad()
 
-        self.objectData[20*i]     = _sphere.center[0]
-        self.objectData[20*i + 1] = _sphere.center[1]
-        self.objectData[20*i + 2] = _sphere.center[2]
+        self.colorBuffer = material.Material(self.screenWidth, self.screenHeight)
 
-        self.objectData[20*i + 3] = _sphere.radius
+        self.sphereBuffer = buffer.Buffer(size = 1024, binding = 1, floatCount = 8)
+        self.planeBuffer = buffer.Buffer(size = 1024, binding = 2, floatCount = 20)
 
-        self.objectData[20*i + 4] = _sphere.color[0]
-        self.objectData[20*i + 5] = _sphere.color[1]
-        self.objectData[20*i + 6] = _sphere.color[2]
+        self.shader = self.createShader("shaders/frameBufferVertex.txt",
+                                        "shaders/frameBufferFragment.txt")
+        
+        self.rayTracerShader = self.createComputeShader("shaders/rayTracer.txt")
     
-    def recordPlane(self, i, _plane):
-
-        # plane: (cx cy cz tx) (ty tz bx by) (bz nx ny nz) (umin umax vmin vmax) (r g b -)
-
-        self.objectData[20*i]     = _plane.center[0]
-        self.objectData[20*i + 1] = _plane.center[1]
-        self.objectData[20*i + 2] = _plane.center[2]
-
-        self.objectData[20*i + 3] = _plane.tangent[0]
-        self.objectData[20*i + 4] = _plane.tangent[1]
-        self.objectData[20*i + 5] = _plane.tangent[2]
-
-        self.objectData[20*i + 6] = _plane.bitangent[0]
-        self.objectData[20*i + 7] = _plane.bitangent[1]
-        self.objectData[20*i + 8] = _plane.bitangent[2]
-
-        self.objectData[20*i + 9]  = _plane.normal[0]
-        self.objectData[20*i + 10] = _plane.normal[1]
-        self.objectData[20*i + 11] = _plane.normal[2]
-
-        self.objectData[20*i + 12] = _plane.uMin
-        self.objectData[20*i + 13] = _plane.uMax
-        self.objectData[20*i + 14] = _plane.vMin
-        self.objectData[20*i + 15] = _plane.vMax
-
-        self.objectData[20*i + 16] = _plane.color[0]
-        self.objectData[20*i + 17] = _plane.color[1]
-        self.objectData[20*i + 18] = _plane.color[2]
-    
-    def updateScene(self, scene):
+    def updateScene(self, _scene: scene.Scene) -> None:
 
         scene.outDated = False
 
         glUseProgram(self.rayTracerShader)
 
-        glUniform1f(glGetUniformLocation(self.rayTracerShader, "sphereCount"), len(scene.spheres))
+        for i,_sphere in enumerate(_scene.spheres):
+            self.sphereBuffer.recordSphere(i, _sphere)
 
-        for i,_sphere in enumerate(scene.spheres):
-            self.recordSphere(i, _sphere)
+        for i,_plane in enumerate(_scene.planes):
+            self.planeBuffer.recordPlane(i, _plane)
 
-        glUniform1f(glGetUniformLocation(self.rayTracerShader, "planeCount"), len(scene.planes))
+        self.sphereBuffer.readFrom()
+        self.planeBuffer.readFrom()
 
-        for i,_plane in enumerate(scene.planes):
-            self.recordPlane(i + len(scene.spheres), _plane)
+        glUniform2iv(glGetUniformLocation(self.rayTracerShader, "objectCounts"), 1, _scene.objectCounts)
 
-        glActiveTexture(GL_TEXTURE1)
-        glBindTexture(GL_TEXTURE_2D, self.objectDataTexture)
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA32F,5,1024,0,GL_RGBA,GL_FLOAT,bytes(self.objectData))
-
-    def prepareScene(self, scene):
+    def prepareScene(self, _scene: scene.Scene) -> None:
         """
             Send scene data to the shader.
         """
 
         glUseProgram(self.rayTracerShader)
 
-        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.position"), 1, scene.camera.position)
-        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.forwards"), 1, scene.camera.forwards)
-        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.right"), 1, scene.camera.right)
-        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.up"), 1, scene.camera.up)
+        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.position"), 1, _scene.camera.position)
+        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.forwards"), 1, _scene.camera.forwards)
+        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.right"), 1, _scene.camera.right)
+        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.up"), 1, _scene.camera.up)
 
-        if scene.outDated:
-            self.updateScene(scene)
+        if _scene.outDated:
+            self.updateScene(_scene)
         
-        glActiveTexture(GL_TEXTURE1)
-        glBindImageTexture(1, self.objectDataTexture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F)
-        
-    def renderScene(self, scene):
+    def renderScene(self, _scene: scene.Scene) -> None:
         """
             Draw all objects in the scene
         """
         
         glUseProgram(self.rayTracerShader)
 
-        self.prepareScene(scene)
+        self.prepareScene(_scene)
 
-        glActiveTexture(GL_TEXTURE0)
-        glBindImageTexture(0, self.colorBuffer, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F)
+        self.colorBuffer.writeTo()
         
-        glDispatchCompute(self.screenWidth, self.screenHeight, 1)
+        glDispatchCompute(int(self.screenWidth/8), int(self.screenHeight/8), 1)
   
         # make sure writing to image has finished before read
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT)
-        glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F)
+
         self.drawScreen()
 
-    def drawScreen(self):
+    def drawScreen(self) -> None:
         glUseProgram(self.shader)
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
-        glActiveTexture(GL_TEXTURE0)
-        glBindTexture(GL_TEXTURE_2D, self.colorBuffer)
-        glBindVertexArray(self.vao)
-        glDrawArrays(GL_TRIANGLES, 0, self.vertex_count)
+        self.colorBuffer.readFrom()
+        self.screenQuad.draw()
         pg.display.flip()
     
     def destroy(self):
@@ -239,7 +132,8 @@ class Engine:
         glUseProgram(self.rayTracerShader)
         glMemoryBarrier(GL_ALL_BARRIER_BITS)
         glDeleteProgram(self.rayTracerShader)
-        glDeleteVertexArrays(1, (self.vao,))
-        glDeleteBuffers(1, (self.vbo,))
-        glDeleteTextures(1, (self.colorBuffer,))
+        self.screenQuad.destroy()
+        self.colorBuffer.destroy()
+        self.sphereBuffer.destroy()
+        self.planeBuffer.destroy()
         glDeleteProgram(self.shader)

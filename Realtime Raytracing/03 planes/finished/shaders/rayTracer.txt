@@ -45,11 +45,10 @@ uniform Camera viewer;
 layout(std430, binding = 1) buffer sphereData {
     Sphere[] spheres;
 };
-uniform float sphereCount;
 layout(std430, binding = 2) buffer planeData {
     Plane[] planes;
 };
-uniform float planeCount;
+uniform ivec2 objectCounts;
 
 vec3 rayColor(Ray ray);
 
@@ -81,7 +80,7 @@ vec3 rayColor(Ray ray) {
     bool hitSomething = false;
     RenderState renderState;
     
-    for (int i = 0; i < sphereCount; i++) {
+    for (int i = 0; i < objectCounts.x; i++) {
 
         hit(ray, spheres[i], 0.001, nearestHit, renderState);
 
@@ -91,7 +90,7 @@ vec3 rayColor(Ray ray) {
         }
     }
 
-    for (int i = 0; i < planeCount; i++) {
+    for (int i = 0; i < objectCounts.y; i++) {
     
        hit(ray, planes[i], 0.001, nearestHit, renderState);
     

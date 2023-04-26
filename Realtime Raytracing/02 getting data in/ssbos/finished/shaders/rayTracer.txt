@@ -33,7 +33,7 @@ uniform Camera viewer;
 layout(std430, binding = 1) buffer sceneData {
     Sphere[] spheres;
 };
-uniform float sphereCount;
+uniform int sphereCount;
 
 vec3 rayColor(Ray ray);
 

@@ -31,7 +31,7 @@ layout(rgba32f, binding = 0) uniform image2D img_output;
 //Scene data
 uniform Camera viewer;
 uniform Sphere spheres[32];
-uniform float sphereCount;
+uniform int sphereCount;
 
 vec3 rayColor(Ray ray);
 

@@ -11,13 +11,16 @@ class Buffer:
         # (cx cy cz r) (r g b _)
         self.hostMemory = np.zeros(8 * size, dtype=np.float32)
 
-        self.deviceMemory = glGenBuffers(1)
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.deviceMemory)
-        glBufferStorage(
-            GL_SHADER_STORAGE_BUFFER, self.hostMemory.nbytes, 
-            self.hostMemory, GL_DYNAMIC_STORAGE_BIT)
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, self.deviceMemory)
-        self.elements_written = 0
+        self.deviceMemory = glGenTextures(1)
+        glActiveTexture(GL_TEXTURE0 + binding)
+        glBindTexture(GL_TEXTURE_2D, self.deviceMemory)
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+    
+        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA32F,2,size,0,GL_RGBA,GL_FLOAT,bytes(self.hostMemory))
     
     def recordSphere(self, i: int, _sphere: sphere.Sphere) -> None:
         """
@@ -32,21 +35,20 @@ class Buffer:
         self.hostMemory[baseIndex : baseIndex + 3] = _sphere.center[:]
         self.hostMemory[baseIndex + 3] = _sphere.radius
         self.hostMemory[baseIndex + 4 : baseIndex + 7] = _sphere.color[:]
-        self.elements_written += 1
     
     def readFrom(self) -> None:
         """
             Upload the CPU data to the buffer, then arm it for reading.
         """
 
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.deviceMemory)
-        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 8 * 4 * self.elements_written, self.hostMemory)
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, self.binding, self.deviceMemory)
-        self.elements_written = 0
+        glActiveTexture(GL_TEXTURE0 + self.binding)
+        glBindTexture(GL_TEXTURE_2D, self.deviceMemory)
+        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA32F,2,self.size,0,GL_RGBA,GL_FLOAT,bytes(self.hostMemory))
+        glBindImageTexture(self.binding, self.deviceMemory, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F)
     
     def destroy(self) -> None:
         """
             Free the memory.
         """
 
-        glDeleteBuffers(1, (self.deviceMemory,))
+        glDeleteTextures(1, (self.deviceMemory,))

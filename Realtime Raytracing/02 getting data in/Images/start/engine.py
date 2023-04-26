@@ -1,6 +1,7 @@
 from config import *
 import screen_quad
 import material
+import scene
 
 class Engine:
     """
@@ -62,12 +63,33 @@ class Engine:
         
         return shader
 
-    def renderScene(self) -> None:
+    def prepareScene(self, _scene: scene.Scene) -> None:
+        """
+            Send scene data to the shader.
+        """
+
+        glUseProgram(self.rayTracerShader)
+
+        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.position"), 1, _scene.camera.position)
+        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.forwards"), 1, _scene.camera.forwards)
+        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.right"), 1, _scene.camera.right)
+        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.up"), 1, _scene.camera.up)
+
+        glUniform1i(glGetUniformLocation(self.rayTracerShader, "sphereCount"), len(_scene.spheres))
+
+        for i,_sphere in enumerate(_scene.spheres):
+            glUniform3fv(glGetUniformLocation(self.rayTracerShader, f"spheres[{i}].center"), 1, _sphere.center)
+            glUniform1f(glGetUniformLocation(self.rayTracerShader, f"spheres[{i}].radius"), _sphere.radius)
+            glUniform3fv(glGetUniformLocation(self.rayTracerShader, f"spheres[{i}].color"), 1, _sphere.color)
+        
+    def renderScene(self, _scene: scene.Scene) -> None:
         """
             Draw all objects in the scene
         """
         
         glUseProgram(self.rayTracerShader)
+
+        self.prepareScene(_scene)
 
         self.colorBuffer.writeTo()
         
