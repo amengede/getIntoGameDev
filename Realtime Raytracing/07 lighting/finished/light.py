@@ -6,7 +6,9 @@ class Light:
     """
 
 
-    def __init__(self, position, color, strength):
+    def __init__(self, 
+        position: list[float, float, float], 
+        color: list[float, float, float], strength: float):
         """
             Create a new plane
 

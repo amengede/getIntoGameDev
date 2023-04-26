@@ -7,37 +7,28 @@ class MegaTexture:
         texture_size = 1024
         texture_count = len(filenames)
         width = 5 * texture_size
-        height = texture_count * texture_size
+        height = texture_size
 
+        image_types = ("albedo", "emissive", "glossiness", "normal")
         
-        textureData = pg.Surface((width,height)).convert()
+        textureLayers = [Image.new(mode = "RGBA", size = (width, height)) for _ in range(texture_count)]
         for i in range(texture_count):
-            #load albedo
-            image = pg.image.load(f"textures\{filenames[i]}\{filenames[i]}_albedo.png").convert()
-            textureData.blit(image, (0, (texture_count - i - 1) * texture_size))
-            #load emissive
-            image = pg.image.load(f"textures\{filenames[i]}\{filenames[i]}_emissive.png").convert()
-            textureData.blit(image, (texture_size, (texture_count - i - 1) * texture_size))
-            #load glossmap
-            image = pg.image.load(f"textures\{filenames[i]}\{filenames[i]}_glossiness.png").convert()
-            textureData.blit(image, (2 * texture_size, (texture_count - i - 1) * texture_size))
-            #load normal
-            image = pg.image.load(f"textures\{filenames[i]}\{filenames[i]}_normal.png").convert()
-            textureData.blit(image, (3 * texture_size, (texture_count - i - 1) * texture_size))
-            #load specular
-            image = pg.image.load(f"textures\{filenames[i]}\{filenames[i]}_specular.png").convert()
-            textureData.blit(image, (4 * texture_size, (texture_count - i - 1) * texture_size))
-        img_data = pg.image.tostring(textureData,"RGBA")
-
+            for j, image_type in enumerate(image_types):
+                with Image.open(f"textures\{filenames[i]}\{filenames[i]}_{image_type}.png", mode = "r") as img:
+                    img.convert("RGBA")
+                    textureLayers[i].paste(img, (j * texture_size, 0))
 
         self.texture = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D, self.texture)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA32F,width, height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
-        glGenerateMipmap(GL_TEXTURE_2D)
+        glBindTexture(GL_TEXTURE_2D_ARRAY, self.texture)
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA32F,width, height,texture_count)
+
+        for i in range(texture_count):
+            img_data = bytes(textureLayers[i].tobytes())
+            glTexSubImage3D(GL_TEXTURE_2D_ARRAY,0,0,0,i,width, height, 1,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
     
     def destroy(self):
         glDeleteTextures(1, self.texture)

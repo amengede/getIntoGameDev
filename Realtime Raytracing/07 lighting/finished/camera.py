@@ -5,13 +5,12 @@ class Camera:
         Represents a camera in the scene
     """
 
-    def __init__(self, position):
+    def __init__(self, position: list[float]):
         """
             Create a new camera at the given position facing in the given direction.
 
             Parameters:
                 position (array [3,1])
-                direction (array [3,1])
         """
 
         self.position = np.array(position, dtype=np.float32)
@@ -19,7 +18,10 @@ class Camera:
         self.phi = 0
         self.recalculateVectors()
     
-    def recalculateVectors(self):
+    def recalculateVectors(self) -> None:
+        """
+            Calculate the camera's fundamental vectors.
+        """
 
         self.forwards = np.array(
             [

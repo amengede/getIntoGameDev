@@ -9,41 +9,107 @@ class App:
 
     def __init__(self):
 
-        pg.init()
         self.screenWidth = 800
         self.screenHeight = 600
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 4)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK,
-                                    pg.GL_CONTEXT_PROFILE_CORE)
-        pg.display.set_mode((self.screenWidth, self.screenHeight), pg.OPENGL|pg.DOUBLEBUF)
-        pg.mouse.set_visible(False)
+
+        self.set_up_glfw()
+
+        self.make_assets()
+
+        self.set_up_input_systems()
+
+        self.set_up_timer()
+
+        self.mainLoop()
+    
+    def set_up_glfw(self) -> None:
+        """
+            Set up glfw.
+        """
+
+        glfw.init()
+        glfw.window_hint(GLFW_CONSTANTS.GLFW_CONTEXT_VERSION_MAJOR,4)
+        glfw.window_hint(GLFW_CONSTANTS.GLFW_CONTEXT_VERSION_MINOR,3)
+        glfw.window_hint(
+            GLFW_CONSTANTS.GLFW_OPENGL_PROFILE, 
+            GLFW_CONSTANTS.GLFW_OPENGL_CORE_PROFILE
+        )
+        glfw.window_hint(
+            GLFW_CONSTANTS.GLFW_OPENGL_FORWARD_COMPAT, 
+            GLFW_CONSTANTS.GLFW_TRUE
+        )
+        glfw.window_hint(GLFW_CONSTANTS.GLFW_DOUBLEBUFFER, False)
+        self.window = glfw.create_window(
+            self.screenWidth, self.screenHeight, "Title", None, None
+        )
+        glfw.make_context_current(self.window)
+    
+    def make_assets(self) -> None:
+        """
+            Make everything needed by the program.
+        """
 
         self.graphicsEngine = engine.Engine(self.screenWidth, self.screenHeight)
         self.scene = scene.Scene()
+    
+    def set_up_input_systems(self) -> None:
+        """
+            configure the mouse and keyboard
+        """
 
-        self.lastTime = pg.time.get_ticks()
-        self.currentTime = 0
+        glfw.set_input_mode(
+            self.window, 
+            GLFW_CONSTANTS.GLFW_CURSOR, 
+            GLFW_CONSTANTS.GLFW_CURSOR_HIDDEN
+        )
+        glfw.set_cursor_pos(
+            self.window,
+            self.screenWidth // 2, 
+            self.screenHeight // 2
+        )
+
+        self.walk_offset_lookup = {
+            1: 0,
+            2: 90,
+            3: 45,
+            4: 180,
+            6: 135,
+            7: 90,
+            8: 270,
+            9: 315,
+            11: 0,
+            12: 225,
+            13: 270,
+            14: 180
+        }
+
+    def set_up_timer(self) -> None:
+        """
+            Set up the framerate timer
+        """
+
+        self.lastTime = glfw.get_time()
+        self.currentTime = glfw.get_time()
         self.numFrames = 0
         self.frameTime = 0
         self.lightCount = 0
 
-        self.mainLoop()
-    
-    def mainLoop(self):
+    def mainLoop(self) -> None:
+        """
+            Run the main program
+        """
 
         running = True
         while (running):
             #events
-            for event in pg.event.get():
-                if (event.type == pg.QUIT):
-                    running = False
-                if (event.type == pg.KEYDOWN):
-                    if (event.key == pg.K_ESCAPE):
-                        running = False
+            if glfw.window_should_close(self.window) \
+                or glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_ESCAPE) == GLFW_CONSTANTS.GLFW_PRESS:
+                running = False
             
             self.handleKeys()
             self.handleMouse()
+
+            glfw.poll_events()
             
             #render
             self.graphicsEngine.renderScene(self.scene)
@@ -52,44 +118,70 @@ class App:
             self.calculateFramerate()
         self.quit()
     
-    def handleKeys(self):
+    def handleKeys(self) -> None:
         """
             handle the current key state
         """
 
         rate = self.frameTime / 16
+        combo = 0
 
-        keys = pg.key.get_pressed()
-        if keys[pg.K_w]:
-            self.scene.move_player(0.1 * rate, 0)
-        elif keys[pg.K_a]:
-            self.scene.move_player(0, -0.1 * rate)
-        elif keys[pg.K_s]:
-            self.scene.move_player(-0.1 * rate, 0)
-        elif keys[pg.K_d]:
-            self.scene.move_player(0, 0.1 * rate)
+        if glfw.get_key(
+            self.window, GLFW_CONSTANTS.GLFW_KEY_W
+            ) == GLFW_CONSTANTS.GLFW_PRESS:
+            combo += 1
+        elif glfw.get_key(
+            self.window, GLFW_CONSTANTS.GLFW_KEY_A
+            ) == GLFW_CONSTANTS.GLFW_PRESS:
+            combo += 2
+        elif glfw.get_key(
+            self.window, GLFW_CONSTANTS.GLFW_KEY_S
+            ) == GLFW_CONSTANTS.GLFW_PRESS:
+            combo += 4
+        elif glfw.get_key(
+            self.window, GLFW_CONSTANTS.GLFW_KEY_D
+            ) == GLFW_CONSTANTS.GLFW_PRESS:
+            combo += 8
+        
+        if combo in self.walk_offset_lookup:
+            angle = np.radians(self.walk_offset_lookup[combo])
+            dx =  0.1 * rate * np.cos(angle)
+            dy = -0.1 * rate * np.sin(angle)
+            self.scene.move_player(dx, dy)
     
-    def handleMouse(self):
+    def handleMouse(self) -> None:
+        """
+            Handle mouse movement.
+        """
 
-        (x,y) = pg.mouse.get_pos()
-        theta_increment = self.frameTime * 0.05 * ((self.screenWidth // 2) - x)
-        phi_increment = self.frameTime * 0.05 * ((self.screenHeight // 2) - y)
-        self.scene.spin_player((theta_increment, phi_increment))
-        pg.mouse.set_pos((self.screenWidth // 2,self.screenHeight // 2))
+        (x,y) = glfw.get_cursor_pos(self.window)
+        rate = self.frameTime / 16.667
+        theta_increment = rate * ((self.screenWidth / 2.0) - x)
+        phi_increment = rate * ((self.screenHeight / 2.0) - y)
+        
+        self.scene.spin_player([theta_increment, phi_increment])
+        glfw.set_cursor_pos(self.window, self.screenWidth // 2, self.screenHeight // 2)
     
-    def calculateFramerate(self):
+    def calculateFramerate(self) -> None:
+        """
+            Calculate the framerate of the program.
+        """
 
-        self.currentTime = pg.time.get_ticks()
+        self.currentTime = glfw.get_time()
         delta = self.currentTime - self.lastTime
-        if (delta >= 1000):
-            framerate = max(1,int(1000.0 * self.numFrames/delta))
-            pg.display.set_caption(f"Running at {framerate} fps.")
+        if (delta >= 1):
+            framerate = int(self.numFrames/delta)
+            glfw.set_window_title(self.window, f"Running at {framerate} fps.")
             self.lastTime = self.currentTime
             self.numFrames = -1
-            self.frameTime = float(1000.0 / max(1,framerate))
+            self.frameTime = float(1000.0 / max(60,framerate))
             self.graphicsEngine.adaptResolution(framerate)
         self.numFrames += 1
 
-    def quit(self):
+    def quit(self) -> None:
+        """
+            For some reason, the graphics engine's destructor throws weird errors.
+        """
+        
         #self.graphicsEngine.destroy()
-        pg.quit()
+        glfw.terminate()

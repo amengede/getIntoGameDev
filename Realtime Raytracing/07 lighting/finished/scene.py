@@ -61,6 +61,10 @@ class Scene:
                 ],
             ) for i in range(4)
         ]
+
+        self.objectCounts = np.array(
+            [len(self.spheres), len(self.planes), len(self.lights)], 
+            dtype = np.int32)
         
         self.camera = camera.Camera(
             position = [-1, 0, 0]
@@ -68,7 +72,7 @@ class Scene:
 
         self.outDated = True
     
-    def move_player(self, forwardsSpeed, rightSpeed):
+    def move_player(self, forwardsSpeed: float, rightSpeed: float) -> None:
         """
         attempt to move the player with the given speed
         """
@@ -78,7 +82,7 @@ class Scene:
         self.camera.position[0] += dPos[0]
         self.camera.position[1] += dPos[1]
     
-    def spin_player(self, dAngle):
+    def spin_player(self, dAngle: list[float, float]) -> None:
         """
             shift the player's direction by the given amount, in degrees
         """
