@@ -16,6 +16,6 @@ void main()
 {
     gl_Position = projection * view * model * vec4(vertexPos, 1.0);
     fragmentTexCoord = vertexTexCoord;
-    //TODO: send out the normal and position of this fragment in
-    // world space.
+    fragmentNormal = vec3(model * vec4(vertexNormal, 0.0));
+    fragmentPos = vec3(model * vec4(vertexPos, 1.0));
 }
