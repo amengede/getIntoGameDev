@@ -1,4 +1,5 @@
 from config import *
+import events
 
 class Entity:
     """
@@ -117,8 +118,8 @@ class Camera(Entity):
         make a view transform.
     """
 
-    _ARM_NEAR = np.array([-5.0, -2.0, 2.7], np.float32)
-    _ARM_FAR = np.array([-10.0,  0.0, 2.7], np.float32)
+    _ARM_NEAR = np.array([-5.0, -2.0, 1.8], np.float32)
+    _ARM_FAR = np.array([-10.0,  0.0, 3.6], np.float32)
 
     def __init__(self):
 
@@ -130,7 +131,8 @@ class Camera(Entity):
         self._up = np.array([0, 0, 0],dtype=np.float32)
         self._global_up = np.array([0, 0, 1], dtype=np.float32)
         self._target: Entity = None
-        self._arm = Camera._ARM_NEAR
+        self._arm = Camera._ARM_FAR
+        self._zoom: events.Timeline[np.ndarray] = None
     
     def _recalculate_frame_of_reference(self) -> None:
         """
@@ -239,6 +241,9 @@ class Camera(Entity):
                 frame_time: time since last update, in milliseconds.
         """
 
+        if self._zoom is not None:
+            self._arm = self._zoom.get_value()
+            self._zoom = self._zoom.update(frame_time)
         self._recalculate_frame_of_reference()
 
     def zoom_in(self) -> None:
@@ -246,14 +251,16 @@ class Camera(Entity):
             Zoom the camera in.
         """
 
-        self._arm = Camera._ARM_NEAR
+        self._zoom = events.Timeline[np.ndarray](
+            self._arm, Camera._ARM_NEAR, 1000, END_ACTION_DESTROY)
     
     def zoom_out(self) -> None:
         """
             Zoom the camera out.
         """
 
-        self._arm = Camera._ARM_FAR
+        self._zoom = events.Timeline[np.ndarray](
+            self._arm, Camera._ARM_FAR, 1000, END_ACTION_DESTROY)
     
 class Scene:
     """

@@ -5,11 +5,13 @@ from OpenGL.GL.shaders import compileProgram,compileShader
 import numpy as np
 import pyrr
 from PIL import Image, ImageOps
+from typing import TypeVar, Generic
 
 ############################## Type Aliases ###################################
 #region
 vec2 = list[float, float]
 vec3 = list[float, float, float]
+T = TypeVar("T")
 #endregion
 ############################## Constants ######################################
 #region
@@ -26,6 +28,8 @@ OBJECT_TYPE_SKY = 3
 
 PIPELINE_TYPE_SKY = 0
 PIPELINE_TYPE_OBJECT = 1
+
+END_ACTION_DESTROY = 0
 
 #0: debug, 1: production
 GAME_MODE = 0
