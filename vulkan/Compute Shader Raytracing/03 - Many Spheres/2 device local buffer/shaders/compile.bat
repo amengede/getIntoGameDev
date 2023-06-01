@@ -1,0 +1,1 @@
+C:\VulkanSDK\1.3.224.0\Bin\glslc.exe raytracer.comp -o raytracer.spv

@@ -1,0 +1,137 @@
+#version 450
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout (binding = 0, rgba8) uniform image2D colorBuffer;
+
+struct Sphere {
+    vec3 center;
+    float radius;
+    vec4 color;
+};
+
+struct Camera {
+    vec3 position;
+    vec3 forwards;
+    vec3 right;
+    vec3 up;
+};
+
+struct Ray {
+    vec3 origin;
+    vec3 direction;
+};
+
+struct HitRecord {
+    float t;
+    int sphereIndex;
+    bool hit;
+    vec3 color;
+};
+
+layout(std140, binding = 1) readonly buffer sphereBuffer {
+	Sphere spheres[];
+} SphereData;
+
+layout(set = 0, binding = 2) uniform UBO {
+	vec3 camera_forwards;
+	vec3 camera_right;
+	vec3 camera_up;
+    vec3 camera_position;
+    int sphereCount;
+} SceneData;
+
+void hit(Ray ray, int sphereIndex, float tMin, float tMax, inout HitRecord record);
+
+void scatter(inout Ray ray, inout HitRecord record);
+
+vec3 background_color(HitRecord record);
+
+vec3 color(Ray ray);
+
+void main() {
+
+    ivec2 screen_pos = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 screen_size = imageSize(colorBuffer);
+    float horizontalCoefficient = ((float(screen_pos.x) * 2 - screen_size.x) / screen_size.x);
+    float verticalCoefficient = ((float(screen_pos.y) * 2 - screen_size.y) / screen_size.x);
+
+    Camera camera;
+    camera.position = vec3(0.0);
+    camera.forwards = vec3(1.0, 0.0, 0.0);
+    camera.right = vec3(0.0, -1.0, 0.0);
+    camera.up = vec3(0.0, 0.0, 1.0);
+
+    Ray ray;
+    ray.origin = camera.position;
+    ray.direction = camera.forwards + horizontalCoefficient * camera.right + verticalCoefficient * camera.up;
+
+    imageStore(colorBuffer, screen_pos, vec4(sqrt(color(ray)),1.0));
+}
+
+vec3 color(Ray ray) {
+    
+    HitRecord record;
+    record.hit = false;
+    record.color = vec3(1.0);
+    bool hitSomething;
+
+    for (int bounce = 0; bounce < 100; bounce++) {
+
+        hitSomething = false;
+        float nearestHit = 999999999;
+    
+        for (int i = 0; i < SceneData.sphereCount; i++) {
+
+            hit(ray, i, 0.001, nearestHit, record);
+
+            if (record.hit) {
+                nearestHit = record.t;
+                hitSomething = true;
+            }
+        }
+        
+        if (hitSomething) {
+            scatter(ray, record);
+        }
+        else {
+            return background_color(record);
+        }
+    }
+    return vec3(0.0);
+}
+
+void hit(Ray ray, int sphereIndex, float tMin, float tMax, inout HitRecord record) {
+    
+    Sphere sphere = SphereData.spheres[sphereIndex];
+    vec3 co = ray.origin - sphere.center;
+    float a = dot(ray.direction, ray.direction);
+    float b = 2 * dot(ray.direction, co);
+    float c = dot(co, co) - sphere.radius * sphere.radius;
+    float discriminant = b * b - (4 * a * c);
+    
+    if (discriminant > 0.0) {
+
+        float t = (-b - sqrt(discriminant)) / (2 * a);
+
+        if (t > tMin && t < tMax) {
+            record.t = t;
+            record.sphereIndex = sphereIndex;
+            record.hit = true;
+            return;
+        }
+    }
+
+    record.hit = false;
+}
+
+void scatter(inout Ray ray, inout HitRecord record) {
+    Sphere sphere = SphereData.spheres[record.sphereIndex];
+    vec3 hitPos = ray.origin + record.t * ray.direction;
+    vec3 surfaceNormal = normalize(hitPos - sphere.center);
+    ray.direction = reflect(ray.direction, surfaceNormal);
+    //ray.direction = surfaceNormal;
+    record.color = 0.5 * (sphere.color).xyz * record.color;
+}
+
+vec3 background_color(HitRecord record) {
+    return record.color * vec3(1.0);
+}
