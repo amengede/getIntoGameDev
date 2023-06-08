@@ -27,4 +27,8 @@ Scene::Scene() {
 
 	description = {};
 	description.sphereCount = sphereCount;
+	description.camera_position = glm::vec3(0.0f);
+	description.camera_forwards = glm::vec3(1.0f, 0.0f, 0.0f);
+	description.camera_right = glm::vec3(0.0f, -1.0f, 0.0f);
+	description.camera_up = glm::vec3(0.0f, 0.0f, 1.0f);
 };

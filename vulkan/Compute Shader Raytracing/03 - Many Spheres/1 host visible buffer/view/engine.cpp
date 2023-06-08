@@ -337,6 +337,8 @@ void Engine::render(Scene* scene) {
 	catch (vk::SystemError error) {
 		std::cout << "Failed to acquire swapchain image!" << std::endl;
 	}
+
+	//prepare_frame(imageIndex, scene);
 	
 	//Compute Raytrace
 	vk::CommandBuffer commandBuffer = swapchainFrames[frameNumber].commandBuffer;
