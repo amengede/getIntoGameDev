@@ -1,0 +1,100 @@
+#version 450
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+struct Wall {
+    vec2 position;
+    vec2 normal;
+    vec2 direction;
+    vec4 color;
+};
+
+struct Ray {
+    vec2 origin;
+    vec2 direction;
+};
+
+layout (binding = 0, rgba8) uniform image2D colorBuffer;
+
+layout(std140, binding = 1) readonly buffer wallBuffer {
+	Wall walls[];
+} WallData;
+
+layout(set = 0, binding = 2) uniform UBO {
+	vec2 forwards;
+	vec2 right;
+    vec2 position;
+    int wallCount;
+} SceneData;
+
+const vec4 ceilingColor = vec4(0.25, 0.25, 0.25, 1.0);
+const vec4 floorColor = vec4(0.5, 0.5, 0.5, 1.0);
+
+vec4 trace(Ray ray, inout int y1, inout int y2);
+
+void main() {
+
+    int x = int(gl_GlobalInvocationID.x);
+    int w = imageSize(colorBuffer).x;
+    
+    float a = ((float(x) * 2 - w) / w);
+    Ray ray;
+    ray.origin = SceneData.position;
+    ray.direction = SceneData.forwards + a * SceneData.right;
+
+    int y1 = 0;
+    int y2 = 0;
+    vec4 wallColor = trace(ray, y1, y2);
+
+    for (int y = 0; y < y1; y++) {
+        imageStore(colorBuffer, ivec2(x, y), ceilingColor);
+    }
+
+    for (int y = y1; y < y2; y++) {
+        imageStore(colorBuffer, ivec2(x, y), wallColor);
+    }
+
+    for (int y = y2; y < 480; y++) {
+        imageStore(colorBuffer, ivec2(x, y), floorColor);
+    }
+}
+
+vec4 trace(Ray ray, inout int y1, inout int y2) {
+    
+    float t = 999999999;
+    vec4 color = vec4(0.0);
+    int wallIndex = 0;
+
+    for (int i = 0; i < SceneData.wallCount; i++) {
+        
+        Wall wall = WallData.walls[i];
+
+        float denominator = dot(ray.direction, wall.normal);
+        if (denominator >= 0) {
+            continue;
+        }
+
+        vec2 pointDifference = wall.position - ray.origin;
+
+        float newT = dot(pointDifference, wall.normal) / denominator;
+
+        if (newT <= 0 || newT > t) {
+            continue;
+        }
+
+        vec2 hitPoint = ray.origin + newT * ray.direction;
+
+        float u = dot(wall.direction, hitPoint - wall.position) / dot(wall.direction, wall.direction);
+
+        if (u < 0 || u > 1) {
+            continue;
+        }
+
+        t = newT;
+        wallIndex = i;
+    }
+
+    y1 = 240 - int(80.0 / t);
+    y2 = 240 + int(80.0 / t);
+    Wall wall = WallData.walls[wallIndex];
+    return wall.color;
+}
