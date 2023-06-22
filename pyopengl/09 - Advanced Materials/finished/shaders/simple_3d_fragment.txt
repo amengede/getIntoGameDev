@@ -1,9 +1,8 @@
-#version 330 core
-#extension GL_ARB_separate_shader_objects : enable
+#version 430 core
 
 uniform vec3 color;
 
-layout (location=0) out vec4 final;
+out vec4 final;
 
 void main()
 {
