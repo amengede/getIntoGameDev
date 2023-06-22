@@ -20,7 +20,6 @@ GLOBAL_Z = np.array([0,0,1], dtype=np.float32)
 ENTITY_TYPE = {
     "CUBE": 0,
     "POINTLIGHT": 1,
-    "MEDKIT": 2
 }
 
 UNIFORM_TYPE = {
@@ -31,13 +30,7 @@ UNIFORM_TYPE = {
     "LIGHT_COLOR": 4,
     "LIGHT_POS": 5,
     "LIGHT_STRENGTH": 6,
-    "TINT": 7,
 }
-
-PIPELINE_TYPE = {
-    "Standard": 0,
-}
-
 #endregion
 ############################## helper functions ###############################
 #region
@@ -69,7 +62,7 @@ def create_shader(vertex_filepath: str, fragment_filepath: str) -> int:
     
     return shader
 
-def load_mesh(filename: str) -> list[float]:
+def loadMesh(filename: str) -> list[float]:
     """
         Load a mesh from an obj file.
 
@@ -193,7 +186,7 @@ class Entity:
         self.position = np.array(position, dtype=np.float32)
         self.eulers = np.array(eulers, dtype=np.float32)
 
-    def update(self, dt: float, camera_pos: np.ndarray) -> None:
+    def update(self, dt: float) -> None:
         """
             Update the object, this is meant to be implemented by
             objects extending this class.
@@ -201,8 +194,6 @@ class Entity:
             Parameters:
 
                 dt: framerate correction factor.
-
-                camera_pos: the position of the camera in the scene
         """
 
         pass
@@ -214,15 +205,6 @@ class Entity:
         """
 
         model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
-
-        model_transform = pyrr.matrix44.multiply(
-            m1=model_transform, 
-            m2=pyrr.matrix44.create_from_axis_rotation(
-                axis = GLOBAL_Y,
-                theta = np.radians(self.eulers[1]), 
-                dtype = np.float32
-            )
-        )
 
         model_transform = pyrr.matrix44.multiply(
             m1=model_transform, 
@@ -244,7 +226,7 @@ class Cube(Entity):
     """
         A basic object in the world, with a position and rotation.
     """
-    __slots__ = tuple()
+    __slots__ = tuple([])
 
     def __init__(self, position: list[float], eulers: list[float]):
         """
@@ -260,15 +242,13 @@ class Cube(Entity):
 
         super().__init__(position, eulers)
     
-    def update(self, dt: float, camera_pos: np.ndarray) -> None:
+    def update(self, dt: float) -> None:
         """
             Update the cube.
 
             Parameters:
 
                 dt: framerate correction factor.
-
-                camera_pos: the position of the camera in the scene
         """
 
         self.eulers[2] += 0.25 * dt
@@ -276,40 +256,7 @@ class Cube(Entity):
         if self.eulers[2] > 360:
             self.eulers[2] -= 360
 
-class Billboard(Entity):
-    """
-        An object which always faces towards the camera
-    """
-    __slots__ = tuple()
-
-    def __init__(self, position: list[float]):
-        """
-            Initialize the billboard.
-
-            Parameters:
-
-                position: the position of the entity.
-        """
-
-        super().__init__(position, eulers=[0,0,0])
-    
-    def update(self, dt: float, camera_pos: np.ndarray) -> None:
-        """
-            Update the billboard.
-
-            Parameters:
-
-                dt: framerate correction factor.
-
-                camera_pos: the position of the camera in the scene
-        """
-
-        self_to_camera = camera_pos - self.position
-        self.eulers[2] = -np.degrees(np.arctan2(-self_to_camera[1], self_to_camera[0]))
-        dist2d = pyrr.vector.length(self_to_camera)
-        self.eulers[1] = -np.degrees(np.arctan2(self_to_camera[2], dist2d))
-
-class PointLight(Billboard):
+class PointLight(Entity):
     """
         A simple pointlight.
     """
@@ -331,7 +278,7 @@ class PointLight(Billboard):
                 strength: strength of the light.
         """
 
-        super().__init__(position)
+        super().__init__(position, eulers = [0,0,0])
         self.color = np.array(color, dtype=np.float32)
         self.strength = strength
 
@@ -429,10 +376,6 @@ class Scene:
             ENTITY_TYPE["CUBE"]: [
                 Cube(position = [6,0,0], eulers = [0,0,0]),
             ],
-
-            ENTITY_TYPE["MEDKIT"]: [
-                Billboard(position = [3,0,-0.5])
-            ],
             
             ENTITY_TYPE["POINTLIGHT"]: [
                 PointLight(
@@ -464,7 +407,7 @@ class Scene:
 
         for entities in self.entities.values():
             for entity in entities:
-                entity.update(dt, self.player.position)
+                entity.update(dt)
 
         self.player.update(dt)
 
@@ -672,7 +615,9 @@ class GraphicsEngine:
     """
         Draws entities and stuff.
     """
-    __slots__ = ("meshes", "materials", "shaders")
+    __slots__ = (
+        "meshes", "materials", "shader", 
+        "uniform_locations", "light_locations")
 
 
     def __init__(self):
@@ -695,8 +640,6 @@ class GraphicsEngine:
 
         glClearColor(0.0, 0.0, 0.0, 1)
         glEnable(GL_DEPTH_TEST)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
     
     def _create_assets(self) -> None:
         """
@@ -704,37 +647,30 @@ class GraphicsEngine:
         """
 
         self.meshes: dict[int, Mesh] = {
-            ENTITY_TYPE["CUBE"]: ObjMesh("models/cube.obj"),
-            ENTITY_TYPE["MEDKIT"]: RectMesh(w = 0.6, h = 0.5),
-            ENTITY_TYPE["POINTLIGHT"]: RectMesh(w = 0.2, h = 0.2),
+            ENTITY_TYPE["CUBE"]: Mesh("models/cube.obj"),
         }
-
         self.materials: dict[int, Material] = {
-            ENTITY_TYPE["CUBE"]: Material("gfx/wood.jpeg"),
-            ENTITY_TYPE["MEDKIT"]: Material("gfx/medkit.png"),
-            ENTITY_TYPE["POINTLIGHT"]: Material("gfx/greenlight.png"),
+            ENTITY_TYPE["CUBE"] : Material("gfx/wood.jpeg"),
         }
         
-        self.shaders: dict[int, Shader] = {
-            PIPELINE_TYPE["Standard"]: Shader(
-                "shaders/vertex.txt", "shaders/fragment.txt"),
-        }
-
+        self.shader = create_shader(
+            vertex_filepath = "shaders/vertex.txt", 
+            fragment_filepath = "shaders/fragment.txt")
+    
     def _set_onetime_uniforms(self) -> None:
         """
             Some shader data only needs to be set once.
         """
 
-        shader = self.shaders[PIPELINE_TYPE["Standard"]]
-        shader.use()
-        glUniform1i(glGetUniformLocation(shader.program, "imageTexture"), 0)
+        glUseProgram(self.shader)
+        glUniform1i(glGetUniformLocation(self.shader, "imageTexture"), 0)
 
         projection_transform = pyrr.matrix44.create_perspective_projection(
             fovy = 45, aspect = 640/480, 
             near = 0.1, far = 50, dtype=np.float32
         )
         glUniformMatrix4fv(
-            glGetUniformLocation(shader.program,"projection"),
+            glGetUniformLocation(self.shader,"projection"),
             1, GL_FALSE, projection_transform
         )
     
@@ -743,24 +679,29 @@ class GraphicsEngine:
             Query and store the locations of shader uniforms
         """
 
-        shader = self.shaders[PIPELINE_TYPE["Standard"]]
-        shader.use()
+        glUseProgram(self.shader)
+        self.uniform_locations: dict[int, int] = {
+            UNIFORM_TYPE["CAMERA_POS"]: glGetUniformLocation(
+                self.shader, "cameraPosition"),
+            UNIFORM_TYPE["MODEL"]: glGetUniformLocation(self.shader, "model"),
+            UNIFORM_TYPE["VIEW"]: glGetUniformLocation(self.shader, "view"),
+        }
 
-        shader.cache_single_location(
-            UNIFORM_TYPE["CAMERA_POS"], "cameraPosition")
-        shader.cache_single_location(UNIFORM_TYPE["MODEL"], "model")
-        shader.cache_single_location(UNIFORM_TYPE["VIEW"], "view")
-        shader.cache_single_location(UNIFORM_TYPE["TINT"], "tint")
+        self.light_locations: dict[int, list[int]] = {
+            UNIFORM_TYPE["LIGHT_COLOR"]: [
+                glGetUniformLocation(self.shader, f"Lights[{i}].color")
+                for i in range(8)
+            ],
+            UNIFORM_TYPE["LIGHT_POS"]: [
+                glGetUniformLocation(self.shader, f"Lights[{i}].position")
+                for i in range(8)
+            ],
+            UNIFORM_TYPE["LIGHT_STRENGTH"]: [
+                glGetUniformLocation(self.shader, f"Lights[{i}].strength")
+                for i in range(8)
+            ],
+        }
 
-        for i in range(8):
-
-            shader.cache_multi_location(
-                UNIFORM_TYPE["LIGHT_COLOR"], f"Lights[{i}].color")
-            shader.cache_multi_location(
-                UNIFORM_TYPE["LIGHT_POS"], f"Lights[{i}].position")
-            shader.cache_multi_location(
-                UNIFORM_TYPE["LIGHT_STRENGTH"], f"Lights[{i}].strength")
-    
     def render(self, 
         camera: Camera, renderables: dict[int, list[Entity]]) -> None:
         """
@@ -775,52 +716,42 @@ class GraphicsEngine:
 
         #refresh screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        shader = self.shaders[PIPELINE_TYPE["Standard"]]
-        shader.use()
+        glUseProgram(self.shader)
 
         glUniformMatrix4fv(
-            shader.fetch_single_location(UNIFORM_TYPE["VIEW"]),
+            self.uniform_locations[UNIFORM_TYPE["VIEW"]], 
             1, GL_FALSE, camera.get_view_transform())
 
-        glUniform3fv(
-            shader.fetch_single_location(UNIFORM_TYPE["CAMERA_POS"]),
-            1, camera.position)
+        for i in range(len(renderables[ENTITY_TYPE["POINTLIGHT"]])):
 
-        for i,light in enumerate(renderables[ENTITY_TYPE["POINTLIGHT"]]):
+            light: PointLight = renderables[ENTITY_TYPE["POINTLIGHT"]][i]
 
             glUniform3fv(
-                shader.fetch_multi_location(UNIFORM_TYPE["LIGHT_POS"], i),
+                self.light_locations[UNIFORM_TYPE["LIGHT_POS"]][i], 
                 1, light.position)
             glUniform3fv(
-                shader.fetch_multi_location(UNIFORM_TYPE["LIGHT_COLOR"], i),
+                self.light_locations[UNIFORM_TYPE["LIGHT_COLOR"]][i], 
                 1, light.color)
             glUniform1f(
-                shader.fetch_multi_location(UNIFORM_TYPE["LIGHT_STRENGTH"], i),
+                self.light_locations[UNIFORM_TYPE["LIGHT_STRENGTH"]][i], 
                 light.strength)
-        
+
+        glUniform3fv(self.uniform_locations[UNIFORM_TYPE["CAMERA_POS"]],
+            1, camera.position)
+
         for entity_type, entities in renderables.items():
 
-            if entity_type not in self.materials:
+            if entity_type not in self.meshes:
                 continue
 
-            material = self.materials[entity_type]
-            material.use()
             mesh = self.meshes[entity_type]
+            material = self.materials[entity_type]
             mesh.arm_for_drawing()
-            
-            color = np.array([1,1,1], dtype = np.float32)
+            material.use()
             for entity in entities:
-
-                if entity_type == ENTITY_TYPE["POINTLIGHT"]:
-                    color = entity.color
-
-                glUniform3fv(
-                    shader.fetch_single_location(UNIFORM_TYPE["TINT"]), 
-                    1, color)
                 glUniformMatrix4fv(
-                    shader.fetch_single_location(UNIFORM_TYPE["MODEL"]),
+                    self.uniform_locations[UNIFORM_TYPE["MODEL"]],
                     1, GL_FALSE, entity.get_model_transform())
-
                 mesh.draw()
 
         glFlush()
@@ -832,107 +763,32 @@ class GraphicsEngine:
             mesh.destroy()
         for material in self.materials.values():
             material.destroy()
-        for shader in self.shaders.values():
-            shader.destroy()
-
-class Shader:
-    """
-        A shader.
-    """
-    __slots__ = ("program", "single_uniforms", "multi_uniforms")
-
-
-    def __init__(self, vertex_filepath: str, fragment_filepath: str):
-        """
-            Initialize the shader.
-
-            Parameters:
-
-                vertex_filepath: filepath to the vertex source code.
-
-                fragment_filepath: filepath to the fragment source code.
-        """
-
-        self.program = create_shader(vertex_filepath, fragment_filepath)
-
-        self.single_uniforms: dict[int, int] = {}
-        self.multi_uniforms: dict[int, list[int]] = {}
-    
-    def cache_single_location(self, 
-        uniform_type: int, uniform_name: str) -> None:
-        """
-            Search and store the location of a uniform location.
-            This is for uniforms which have one location per variable.
-        """
-
-        self.single_uniforms[uniform_type] = glGetUniformLocation(
-            self.program, uniform_name)
-    
-    def cache_multi_location(self, 
-        uniform_type: int, uniform_name: str) -> None:
-        """
-            Search and store the location of a uniform location.
-            This is for uniforms which have multiple locations per variable.
-            e.g. Arrays
-        """
-
-        if uniform_type not in self.multi_uniforms:
-            self.multi_uniforms[uniform_type] = []
-        
-        self.multi_uniforms[uniform_type].append(
-            glGetUniformLocation(
-            self.program, uniform_name)
-        )
-    
-    def fetch_single_location(self, uniform_type: int) -> int:
-        """
-            Returns the location of a uniform location.
-            This is for uniforms which have one location per variable.
-        """
-
-        return self.single_uniforms[uniform_type]
-    
-    def fetch_multi_location(self, 
-        uniform_type: int, index: int) -> int:
-        """
-            Returns the location of a uniform location.
-            This is for uniforms which have multiple locations per variable.
-            e.g. Arrays
-        """
-
-        return self.multi_uniforms[uniform_type][index]
-
-    def use(self) -> None:
-        """
-            Use the program.
-        """
-
-        glUseProgram(self.program)
-    
-    def destroy(self) -> None:
-        """
-            Free any allocated memory.
-        """
-
-        glDeleteProgram(self.program)
+        glDeleteProgram(self.shader)
 
 class Mesh:
     """
-        A basic mesh which can hold data and be drawn.
+        A mesh that can represent an obj model.
     """
-    __slots__ = ("vao", "vbo", "vertex_count")
+    __slots__ = ("vbo", "vao", "vertex_count")
 
 
-    def __init__(self):
+    def __init__(self, filename: str):
         """
             Initialize the mesh.
         """
 
         # x, y, z, s, t, nx, ny, nz
+        vertices = loadMesh(filename)
+        self.vertex_count = len(vertices)//8
+        vertices = np.array(vertices, dtype=np.float32)
+
         self.vao = glGenVertexArrays(1)
         glBindVertexArray(self.vao)
+
+        #Vertices
         self.vbo = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
         #position
         glEnableVertexAttribArray(0)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(0))
@@ -942,7 +798,7 @@ class Mesh:
         #normal
         glEnableVertexAttribArray(2)
         glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(20))
-
+    
     def arm_for_drawing(self) -> None:
         """
             Arm the triangle for drawing.
@@ -963,56 +819,6 @@ class Mesh:
         
         glDeleteVertexArrays(1,(self.vao,))
         glDeleteBuffers(1,(self.vbo,))
-
-class ObjMesh(Mesh):
-    """
-        A mesh which is initialized from an obj file.
-    """
-    __slots__ = tuple()
-
-
-    def __init__(self, filename: str):
-        """
-            Initialize the mesh.
-        """
-
-        super().__init__()
-        # x, y, z, s, t, nx, ny, nz
-        vertices = load_mesh(filename)
-        self.vertex_count = len(vertices)//8
-        vertices = np.array(vertices, dtype=np.float32)
-
-        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
-
-class RectMesh(Mesh):
-    """
-        A mesh which constructs its vertices to represent
-        a rectangle.
-    """
-    __slots__ = tuple()
-
-
-    def __init__(self, w: float, h: float):
-        """
-            Initialize the rectangle mesh to the given
-            width and height.
-        """
-
-        super().__init__()
-
-        vertices = (
-            0, -w/2,  h/2, 0, 0, 1, 0, 0,
-            0, -w/2, -h/2, 0, 1, 1, 0, 0,
-            0,  w/2, -h/2, 1, 1, 1, 0, 0,
-
-            0, -w/2,  h/2, 0, 0, 1, 0, 0,
-            0,  w/2, -h/2, 1, 1, 1, 0, 0,
-            0,  w/2,  h/2, 1, 0, 1, 0, 0
-        )
-        vertices = np.array(vertices, dtype=np.float32)
-        self.vertex_count = 6
-        
-        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
 
 class Material:
     """
