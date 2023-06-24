@@ -367,7 +367,7 @@ class Scene:
             z = np.random.uniform(low = -10, high = 10)
             self.positions[0] = np.append(self.positions[0], (x, y, z))
             self.positions[1] = np.append(self.positions[1], 1)
-            index = len(self.positions[1])
+            index = len(self.positions[1]) - 1
             self.lights[1] = np.append(self.lights[1], index)
 
 
