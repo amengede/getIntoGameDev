@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 struct Material {
     sampler2D albedo;
@@ -9,57 +9,56 @@ struct Material {
 
 struct Light {
     vec3 color;
+    vec3 position;
     float strength;
 };
 
 in vec3 fragmentPos;
 in vec2 fragmentTexCoord;
-in float fragmentLightCount;
 in vec3 fragmentViewPos;
-in vec3 fragmentLightPos[8];
 
 uniform Material material;
 uniform Light lights[8];
+uniform vec3 ambient;
+uniform vec3 cameraPos;
 
 layout (location=0) out vec4 color;
 
-vec3 CalculatePointLight(int i, vec3 normal);
+vec3 CalculatePointLight(int i, vec3 normal) {
+    vec3 result = vec3(0.0);
+
+    Light light = lights[i];
+
+    //directions
+    normal = normalize(normal);
+	vec3 fragLight = normalize(light.position - fragmentPos);
+    vec3 fragCam = normalize(cameraPos - fragmentPos);
+    vec3 halfDir = normalize(fragLight + fragCam);
+
+    //diffuse
+    vec3 adjusted_color = max(0.0,dot(normal, fragLight)) * light.color;
+	result += adjusted_color * vec3(texture(material.albedo, fragmentTexCoord));
+	
+    //specular
+    adjusted_color = light.strength * pow(max(dot(normal, halfDir), 0.0),32) * light.color;
+    result += adjusted_color * vec3(texture(material.specular, fragmentTexCoord));
+    
+    return result;
+}
 
 void main()
 {
 
-    vec3 normal = normalize(2.0 * texture(material.normal, fragmentTexCoord).rgb - vec3(1.0));
-    float alpha = texture(material.albedo, fragmentTexCoord).a;
+    vec3 normal = -normalize(vec3(1.0) - 2.0 * texture(material.normal, fragmentTexCoord).xyz);
     
     //ambient
-    vec3 lightLevel = 0.2 * vec3(texture(material.albedo, fragmentTexCoord)) * texture(material.ao, fragmentTexCoord).rgb;
+    vec3 lightLevel = ambient * vec3(texture(material.albedo, fragmentTexCoord));
+    lightLevel = lightLevel * texture(material.ao, fragmentTexCoord).xyz;
 
     for (int i = 0; i < 8; i++) {
-        float distance = length(fragmentLightPos[i] - fragmentPos);
-        lightLevel += CalculatePointLight(i, normal) / (distance * distance);
+        float distance = length(lights[i].position - fragmentPos);
+        lightLevel += CalculatePointLight(i, normal) / distance;
     }
 
-    color = vec4(lightLevel, alpha);
-}
-
-vec3 CalculatePointLight(int i, vec3 normal) {
-
-    //directions
-	vec3 lightDir = normalize(fragmentLightPos[i] - fragmentPos);
-    vec3 viewDir = normalize(fragmentViewPos - fragmentPos);
-    vec3 halfDir = normalize(lightDir + viewDir);
-
-    vec3 baseTexture = vec3(texture(material.albedo, fragmentTexCoord));
-
-    vec3 specular = vec3(texture(material.specular, fragmentTexCoord));
-
-    float gloss = max(0.0, min(1.0, length(specular)));
-
-    //diffuse
-	vec3 result = (1 - gloss) * lights[i].color * lights[i].strength * max(0.0,dot(normal,lightDir)) * baseTexture;
-	
-    //specular
-    result += gloss * lights[i].color * lights[i].strength * pow(max(dot(normal, halfDir), 0.0), max(32,floor(1024 * gloss))) * specular;
-    
-    return result;
+    color = vec4(lightLevel, 1.0);
 }
