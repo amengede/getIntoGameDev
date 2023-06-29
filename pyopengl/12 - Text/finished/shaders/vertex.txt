@@ -9,13 +9,10 @@ layout (location=4) in vec3 vertexBitangent;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
-uniform vec3 viewPos;
-uniform vec3 lightPos[8];
 
 out vec3 fragmentPos;
 out vec2 fragmentTexCoord;
-out vec3 fragmentViewPos;
-out vec3 fragmentLightPos[8];
+out mat3 TBN;
 
 void main()
 {
@@ -26,12 +23,8 @@ void main()
     vec3 N = normalize(vec3(model * vec4(vertexNormal, 0)));
     //TBN: tangent-space to world-space
     //TBN transpose: inverse, world-space to tangent-space
-    mat3 TBN = transpose(mat3(T, B, N));
+    TBN = mat3(T, B, N);
     
-    fragmentPos = TBN * vec3(model * vec4(vertexPos, 1.0));
+    fragmentPos = (model * vec4(vertexPos, 1.0)).xyz;
     fragmentTexCoord = vertexTexCoord;
-    fragmentViewPos = TBN * viewPos;
-    for (int i = 0; i < 8; i++) {
-        fragmentLightPos[i] = TBN * lightPos[i];
-    }
 }
