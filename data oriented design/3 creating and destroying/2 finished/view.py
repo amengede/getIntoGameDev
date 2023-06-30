@@ -339,7 +339,7 @@ class GraphicsEngine:
         camera: list[np.ndarray], 
         transforms: list[np.ndarray],
         light_data: np.ndarray,
-        entity_counts: dict[int, int]) -> None:
+        entity_counts: np.ndarray) -> None:
         """
             Draw everything.
 

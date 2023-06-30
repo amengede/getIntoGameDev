@@ -17,9 +17,9 @@ class App:
         The control class.
     """
     __slots__ = (
-        "window", "renderer", "scene", "last_time", 
-        "current_time", "frames_rendered", "frametime",
-        "_keys", "t")
+        "window", "renderer", "last_time", 
+        "current_time", "frames_rendered", 
+        "frametime", "_keys")
 
 
     def __init__(self):
@@ -34,8 +34,6 @@ class App:
         self._set_up_input_systems()
 
         self._create_assets()
-
-        self.t = 0
 
     def _set_up_glfw(self) -> None:
         """
@@ -101,6 +99,14 @@ class App:
         match action:
             case GLFW_CONSTANTS.GLFW_PRESS:
                 state = True
+                if key == GLFW_CONSTANTS.GLFW_KEY_KP_1:
+                    model.make_cube()
+                elif key == GLFW_CONSTANTS.GLFW_KEY_KP_2:
+                    model.delete_cube()
+                elif key == GLFW_CONSTANTS.GLFW_KEY_KP_4:
+                    model.make_light()
+                elif key == GLFW_CONSTANTS.GLFW_KEY_KP_5:
+                    model.delete_light()
             case GLFW_CONSTANTS.GLFW_RELEASE:
                 state = False
             case _:
@@ -118,8 +124,6 @@ class App:
             PIPELINE_TYPE["STANDARD"], ENTITY_TYPE["CUBE"])
         self.renderer.register_entity(
             PIPELINE_TYPE["EMISSIVE"], ENTITY_TYPE["POINTLIGHT"])
-
-        self.scene = model.Scene()
     
     def run(self) -> None:
         """
@@ -135,18 +139,16 @@ class App:
             
             self._handle_keys()
             self._handle_mouse()
-            if self.t > 0:
-                self.t = max(0, self.t - self.frametime / 16.67)
 
             glfw.poll_events()
 
-            self.scene.update(self.frametime / 16.67)
+            model.update(self.frametime / 16.67)
             
             self.renderer.render(
-                self.scene.player, 
-                self.scene.model_transforms, 
-                self.scene.light_data,
-                self.scene.entity_counts)
+                model.player, 
+                (model.tables[10], model.tables[12]), 
+                model.tables[14],
+                model.entity_counts)
 
             #timing
             self._calculate_framerate()
@@ -155,20 +157,6 @@ class App:
         """
             Takes action based on the keys currently pressed.
         """
-
-        if self.t == 0:
-            if self._keys.get(GLFW_CONSTANTS.GLFW_KEY_KP_1, False):
-                self.t = 60
-                self.scene.make_cube()
-            elif self._keys.get(GLFW_CONSTANTS.GLFW_KEY_KP_2, False):
-                self.t = 60
-                self.scene.delete_cube()
-            elif self._keys.get(GLFW_CONSTANTS.GLFW_KEY_KP_4, False):
-                self.t = 60
-                self.scene.make_light()
-            elif self._keys.get(GLFW_CONSTANTS.GLFW_KEY_KP_5, False):
-                self.t = 60
-                self.scene.delete_light()
 
         rate = 0.005*self.frametime
         d_pos = np.zeros(3, dtype=np.float32)
@@ -189,7 +177,7 @@ class App:
 
         d_pos = rate / length * d_pos
 
-        self.scene.move_player(d_pos)
+        model.move_player(d_pos)
 
     def _handle_mouse(self) -> None:
         """
@@ -199,7 +187,7 @@ class App:
         (x,y) = glfw.get_cursor_pos(self.window)
         d_eulers = 0.02 * ((SCREEN_WIDTH / 2) - x) * GLOBAL_Z
         d_eulers += 0.02 * ((SCREEN_HEIGHT / 2) - y) * GLOBAL_Y
-        self.scene.spin_player(d_eulers)
+        model.spin_player(d_eulers)
         glfw.set_cursor_pos(self.window, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
 
     def _calculate_framerate(self) -> None:

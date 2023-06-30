@@ -7,7 +7,6 @@ from OpenGL.GL.shaders import compileProgram,compileShader
 import numpy as np
 import pyrr
 from PIL import Image
-from numba import njit
 #endregion
 ############################## Constants ######################################
 #region
