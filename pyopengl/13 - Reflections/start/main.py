@@ -6,7 +6,7 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram,compileShader
 import numpy as np
 import pyrr
-from PIL import Image, ImageOps
+from PIL import Image
 #endregion
 ############################## Constants ######################################
 #region
@@ -22,9 +22,6 @@ ENTITY_TYPE = {
     "POINTLIGHT": 1,
     "MEDKIT": 2,
     "SCREEN": 3,
-    "MIRROR": 4,
-    "CONTAINER": 5,
-    "PLAYER": 6,
 }
 
 UNIFORM_TYPE = {
@@ -77,16 +74,13 @@ def create_shader(vertex_filepath: str, fragment_filepath: str) -> int:
     
     return shader
 
-def load_mesh(filename: str, pre_transform: np.ndarray) -> list[float]:
+def load_mesh(filename: str) -> list[float]:
     """
         Load a mesh from an obj file.
 
         Parameters:
 
             filename: the filename.
-
-            pre_transform: the transform to be applied to the 
-            model once upon loading
         
         Returns:
 
@@ -106,31 +100,26 @@ def load_mesh(filename: str, pre_transform: np.ndarray) -> list[float]:
             words = line.split(" ")
             match words[0]:
                 case "v":
-                    v.append(read_vertex_data(words, pre_transform))
+                    v.append(read_vertex_data(words))
                 case "vt":
                     vt.append(read_texcoord_data(words))
                 case "vn":
-                    vn.append(read_normal_data(words, pre_transform))
+                    vn.append(read_normal_data(words))
                 case "f":
                     read_face_data(words, v, vt, vn, vertices)
             line = file.readline()
 
     return vertices
 
-def read_vertex_data(words: list[str], 
-    pre_transform: np.ndarray) -> list[float]:
+def read_vertex_data(words: list[str]) -> list[float]:
     """
         Returns a vertex description.
     """
 
-    vertex = np.array(
-        (float(words[1]), float(words[2]), float(words[3]), 1.0), 
-        dtype = np.float32)
-    vertex = pyrr.matrix44.multiply(vertex, pre_transform)
     return [
-        vertex[0],
-        vertex[1],
-        vertex[2]
+        float(words[1]),
+        float(words[2]),
+        float(words[3])
     ]
 
 def read_texcoord_data(words: list[str]) -> list[float]:
@@ -143,20 +132,15 @@ def read_texcoord_data(words: list[str]) -> list[float]:
         float(words[2])
     ]
 
-def read_normal_data(words: list[str],
-    pre_transform: np.ndarray) -> list[float]:
+def read_normal_data(words: list[str]) -> list[float]:
     """
         Returns a normal vector description.
     """
 
-    normal = np.array(
-        (float(words[1]), float(words[2]), float(words[3]), 0.0), 
-        dtype = np.float32)
-    normal = pyrr.matrix44.multiply(normal, pre_transform)
     return [
-        normal[0],
-        normal[1],
-        normal[2]
+        float(words[1]),
+        float(words[2]),
+        float(words[3])
     ]
 
 def read_face_data(
@@ -287,7 +271,7 @@ class Entity:
             m1=model_transform, 
             m2=pyrr.matrix44.create_from_axis_rotation(
                 axis = GLOBAL_Y,
-                theta = np.radians(-self.eulers[1]), 
+                theta = np.radians(self.eulers[1]), 
                 dtype = np.float32
             )
         )
@@ -307,7 +291,7 @@ class Entity:
                 vec=np.array(self.position),dtype=np.float32
             )
         )
-  
+        
 class Cube(Entity):
     """
         A basic object in the world, with a position and rotation.
@@ -363,7 +347,7 @@ class BillBoard(Entity):
         self_to_camera = camera_pos - self.position
         self.eulers[2] = -np.degrees(np.arctan2(-self_to_camera[1], self_to_camera[0]))
         dist2d = pyrr.vector.length(self_to_camera)
-        self.eulers[1] = np.degrees(np.arctan2(self_to_camera[2], dist2d))
+        self.eulers[1] = -np.degrees(np.arctan2(self_to_camera[2], dist2d))
 
 class PointLight(BillBoard):
     """
@@ -393,12 +377,12 @@ class PointLight(BillBoard):
 
 class Camera(Entity):
     """
-        A camera of some kind.
+        A first person camera.
     """
     __slots__ = ("forwards", "right", "up")
 
 
-    def __init__(self, position: list[float], eulers: list[float]):
+    def __init__(self, position: list[float]):
         """
             Initialize the camera.
 
@@ -407,10 +391,10 @@ class Camera(Entity):
                 position: the camera's position
         """
 
-        super().__init__(position, eulers)
-        self.update_simple()
+        super().__init__(position, eulers = [0,0,0])
+        self.update()
     
-    def update_simple(self) -> None:
+    def update(self) -> None:
         """
             Update the camera.
         """
@@ -442,12 +426,6 @@ class Camera(Entity):
             target = self.position + self.forwards,
             up = self.up, dtype = np.float32)
     
-class Player(Camera):
-    """
-        A first person camera.
-    """
-    __slots__ = tuple()
-    
     def move(self, d_pos) -> None:
         """
             Move by the given amount in the (forwards, right, up) vectors.
@@ -470,39 +448,6 @@ class Player(Camera):
         self.eulers[1] = min(89, max(-89, self.eulers[1]))
         self.eulers[2] %= 360
 
-class Reflector(Camera):
-    """
-        A reflector is a camera that updates its
-        view based on the incident ray of the player.
-    """
-    __slots__ = tuple()
-    
-    def update(self, dt: float, camera_pos: np.ndarray) -> None:
-        """
-            Update the reflector, calculate its
-            new orientation.
-        """
-
-        
-        phi = self.eulers[1]
-        theta = self.eulers[2]
-
-        self.forwards = np.array(
-            [
-                np.cos(np.deg2rad(theta)) * np.cos(np.deg2rad(phi)),
-                np.sin(np.deg2rad(theta)) * np.cos(np.deg2rad(phi)),
-                np.sin(np.deg2rad(phi))
-            ],
-            dtype = np.float32
-        )
-        incident = self.position - camera_pos
-        self.forwards = pyrr.vector.normalize(
-            incident - 2 * np.dot(incident, self.forwards) * self.forwards)
-
-        self.right = np.cross(self.forwards, GLOBAL_Z)
-
-        self.up = np.cross(self.right, self.forwards)
-
 class Scene:
     """
         Manages all objects and coordinates their interactions.
@@ -518,20 +463,10 @@ class Scene:
         self.entities: dict[int, list[Entity]] = {
             ENTITY_TYPE["CUBE"]: [
                 Cube(
-                    position = [-5,0,1],
+                    position = [6,0,1],
                     eulers = [0,0,0]),],
             ENTITY_TYPE["MEDKIT"]: [
                 BillBoard(position = [3,0,0.5])
-            ],
-            ENTITY_TYPE["CONTAINER"]: [
-                Entity(
-                    position = [0,0,0],
-                    eulers=[0,0,0]),
-            ],
-            ENTITY_TYPE["MIRROR"]: [
-                Reflector(
-                    position = [9.8, 0, 2],
-                    eulers = [0,0,0])
             ]
         }
 
@@ -547,9 +482,8 @@ class Scene:
             for i in range(8)
         ]
 
-        self.player = Player(
-            position = [0,0,2],
-            eulers = [0,0,0]
+        self.player = Camera(
+            position = [0,0,2]
         )
 
     def update(self, rate: float) -> None:
@@ -568,7 +502,7 @@ class Scene:
         for light in self.lights:
             light.update(rate, self.player.position)
         
-        self.player.update_simple()
+        self.player.update()
     
     def move_player(self, d_pos: np.ndarray) -> None:
         """
@@ -817,28 +751,18 @@ class GraphicsEngine:
             ENTITY_TYPE["MEDKIT"]: BillBoardMesh(w = 0.6, h = 0.5),
             ENTITY_TYPE["POINTLIGHT"]: BillBoardMesh(w = 0.2, h = 0.1),
             ENTITY_TYPE["SCREEN"]: TexturedQuad(0, 0, 2, 2),
-            ENTITY_TYPE["MIRROR"]: BillBoardMesh(w = 2.0, h = 2.0),
-            ENTITY_TYPE["PLAYER"]: ObjMesh("models/monkey.obj", 
-                pre_transform = pyrr.matrix44.create_from_z_rotation(
-                    theta = -np.pi / 2, dtype=np.float32)),
-            ENTITY_TYPE["CONTAINER"]: ObjMesh("models/container.obj"),
         }
+
+        self.framebuffers: list[FrameBuffer] = [
+            FrameBuffer((ColorAttachment(),), DepthStencilAttachment()),
+            FrameBuffer((ColorAttachment(),), DepthStencilAttachment()),
+        ]
 
         self.materials: dict[int, Material] = {
             ENTITY_TYPE["CUBE"]: AdvancedMaterial("wood", "png"),
             ENTITY_TYPE["MEDKIT"]: AdvancedMaterial("medkit", "png"),
             ENTITY_TYPE["POINTLIGHT"]: Material2D("gfx/greenlight.png", 0),
-            ENTITY_TYPE["MIRROR"]: ColorAttachment(),
-            ENTITY_TYPE["PLAYER"]: AdvancedMaterial("wood", "png"),
-            ENTITY_TYPE["CONTAINER"]: AdvancedMaterial("wood", "png"),
         }
-
-        self.framebuffers: list[FrameBuffer] = [
-            FrameBuffer(
-                (self.materials[ENTITY_TYPE["MIRROR"]],), 
-                DepthStencilAttachment()),
-            FrameBuffer((ColorAttachment(),), DepthStencilAttachment()),
-        ]
 
         self.shaders: dict[int, Shader] = {
             PIPELINE_TYPE["STANDARD"]: Shader(
@@ -860,7 +784,7 @@ class GraphicsEngine:
 
         self.font = Font()
         self.fps_label = TextLine("FPS: ", self.font, (-0.9, 0.9), (0.05, 0.05))
-    
+
     def _set_onetime_uniforms(self) -> None:
         """
             Some shader data only needs to be set once.
@@ -894,7 +818,7 @@ class GraphicsEngine:
         glUniformMatrix4fv(
             glGetUniformLocation(shader.program,"projection"),
             1, GL_FALSE, projection_transform)
-
+    
     def _get_uniform_locations(self) -> None:
         """
             Query and store the locations of shader uniforms
@@ -953,34 +877,7 @@ class GraphicsEngine:
                 lights: all the lights in the scene
         """
         
-        #capture mirror's view onto framebuffer 0
-        self._render_from_mirror(
-            renderables, lights, camera, renderables[ENTITY_TYPE["MIRROR"]][0])
-
-        #render onto framebuffer 1
-        self._render_from_player(renderables, lights, camera)
-        
-        self._draw_fps_label()
-
-        self._post_processing(_from = 1, _to = 0)
-
-        self._blit(_from = 0, _to = 1)
-        
-        self._crt_effect(_from = 1, _to = 0)
-        
-        self._draw_to_screen(_from = 0)
-
-        glFlush()
-    
-    def _render_from_mirror(self, 
-        renderables: dict[int, list[Entity]], lights: list[PointLight],
-        player: Camera, mirror: Camera) -> None:
-        """
-            Render the scene from the perspective of the given mirror.
-        """
-
-        view = mirror.get_view_transform()
-        pos = mirror.position
+        view = camera.get_view_transform()
 
         #First pass
         self.framebuffers[0].use()
@@ -998,7 +895,7 @@ class GraphicsEngine:
 
         glUniform3fv(
             shader.fetch_single_location(UNIFORM_TYPE["CAMERA_POS"]), 
-            1, pos)
+            1, camera.position)
 
         for i,light in enumerate(lights):
             glUniform3fv(
@@ -1013,81 +910,7 @@ class GraphicsEngine:
 
         for entity_type, entities in renderables.items():
 
-            if entity_type not in self.meshes\
-                or entity_type == ENTITY_TYPE["MIRROR"]:
-                continue
-            mesh = self.meshes[entity_type]
-            mesh.arm_for_drawing()
-            self.materials[entity_type].use()
-
-            for entity in entities:
-                glUniformMatrix4fv(
-                    shader.fetch_single_location(UNIFORM_TYPE["MODEL"]), 
-                    1, GL_FALSE, entity.get_model_transform())
-                mesh.draw()
-
-        entity_type = ENTITY_TYPE["PLAYER"]
-        mesh = self.meshes[entity_type]
-        mesh.arm_for_drawing()
-        self.materials[entity_type].use()
-        glUniformMatrix4fv(
-            shader.fetch_single_location(UNIFORM_TYPE["MODEL"]), 
-            1, GL_FALSE, player.get_model_transform())
-        mesh.draw()
-        #unlit shader
-        shader_type = PIPELINE_TYPE["EMISSIVE"]
-        shader = self.shaders[shader_type]
-        shader.use()
-
-        glUniformMatrix4fv(
-            shader.fetch_single_location(UNIFORM_TYPE["VIEW"]), 
-            1, GL_FALSE, view)
-
-        mesh = self.meshes[ENTITY_TYPE["POINTLIGHT"]]
-        mesh.arm_for_drawing()
-        self.materials[ENTITY_TYPE["POINTLIGHT"]].use()
-        
-        for light in lights:
-
-            glUniformMatrix4fv(
-                shader.fetch_single_location(UNIFORM_TYPE["MODEL"]), 
-                1, GL_FALSE, light.get_model_transform())
-            glUniform3fv(
-                shader.fetch_single_location(UNIFORM_TYPE["TINT"]),
-                1, light.color)
-            mesh.draw()
-
-    def _render_from_player(self, 
-        renderables: dict[int, list[Entity]], lights: list[PointLight],
-        player: Camera) -> None:
-        """
-            Render the scene from the perspective of the player.
-        """
-
-        view = player.get_view_transform()
-        pos = player.position
-
-        #First pass
-        self.framebuffers[1].use()
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-        #lit shader
-        shader_type = PIPELINE_TYPE["STANDARD"]
-        shader = self.shaders[shader_type]
-        shader.use()
-
-        glUniformMatrix4fv(
-            shader.fetch_single_location(UNIFORM_TYPE["VIEW"]), 
-            1, GL_FALSE, view)
-
-        glUniform3fv(
-            shader.fetch_single_location(UNIFORM_TYPE["CAMERA_POS"]), 
-            1, pos)
-
-        for entity_type, entities in renderables.items():
-
-            if entity_type not in self.meshes\
-                or entity_type == ENTITY_TYPE["MIRROR"]:
+            if entity_type not in self.meshes:
                 continue
             mesh = self.meshes[entity_type]
             mesh.arm_for_drawing()
@@ -1122,20 +945,7 @@ class GraphicsEngine:
                 1, light.color)
             mesh.draw()
         
-        glUniform3fv(shader.fetch_single_location(UNIFORM_TYPE["TINT"]),
-            1, np.array([1.0, 1.0, 1.0], dtype = np.float32))
-        
-        mesh = self.meshes[ENTITY_TYPE["MIRROR"]]
-        mesh.arm_for_drawing()
-        self.materials[ENTITY_TYPE["MIRROR"]].use()
-        mirror = renderables[ENTITY_TYPE["MIRROR"]][0]
-        glUniformMatrix4fv(
-            shader.fetch_single_location(UNIFORM_TYPE["MODEL"]), 
-            1, GL_FALSE, mirror.get_model_transform())
-        mesh.draw()
-    
-    def _draw_fps_label(self) -> None:
-
+        #draw fps label
         shader_type = PIPELINE_TYPE["BLIT"]
         shader = self.shaders[shader_type]
         shader.use()
@@ -1145,58 +955,44 @@ class GraphicsEngine:
         self.fps_label.draw()
         glUniform4fv(shader.fetch_single_location(UNIFORM_TYPE["TINT"]),
             1, np.array([1.0, 1.0, 1.0, 1.0], dtype = np.float32))
-    
-    def _post_processing(self, _from: int, _to: int) -> None:
-        """
-            Render a post processing pass, from the given framebuffer
-            to the given framebuffer.
-        """
 
+        #Post processing pass
         shader_type = PIPELINE_TYPE["POST"]
         shader = self.shaders[shader_type]
         shader.use()
-        self.framebuffers[_to].use()
+        self.framebuffers[1].use()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glDisable(GL_DEPTH_TEST)
-        self.framebuffers[_from].color_attachments[0].use(0)
+        self.framebuffers[0].color_attachments[0].use(0)
         mesh = self.meshes[ENTITY_TYPE["SCREEN"]]
         mesh.arm_for_drawing()
         mesh.draw()
-    
-    def _blit(self, _from: int, _to: int) -> None:
-        """
-            Blit between two framebuffers.
-        """
 
+        #Blit color buffer 1 onto color buffer 0
         shader_type = PIPELINE_TYPE["BLIT"]
         shader = self.shaders[shader_type]
         shader.use()
-        self.framebuffers[_to].use()
-        self.framebuffers[_from].color_attachments[0].use(0)
-        self.meshes[ENTITY_TYPE["SCREEN"]].draw()
-
-    def _crt_effect(self, _from: int, _to: int) -> None:
-
+        self.framebuffers[0].use()
+        self.framebuffers[1].color_attachments[0].use(0)
+        mesh.draw()
+        
+        #CRT emulation pass
         shader_type = PIPELINE_TYPE["CRT"]
         shader = self.shaders[shader_type]
         shader.use()
-        self.framebuffers[_to].use()
-        self.framebuffers[_from].color_attachments[0].use(0)
-        self.meshes[ENTITY_TYPE["SCREEN"]].draw()
-    
-    def _draw_to_screen(self, _from: int) -> None:
-
-        glDisable(GL_DEPTH_TEST)
-        glDisable(GL_CULL_FACE)
+        self.framebuffers[1].use()
+        self.framebuffers[0].color_attachments[0].use(0)
+        mesh.draw()
+        
+        #Put the final result on screen
         shader_type = PIPELINE_TYPE["BLIT"]
         shader = self.shaders[shader_type]
         shader.use()
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
-        self.framebuffers[_from].color_attachments[0].use(0)
-        glUniform4fv(shader.fetch_single_location(UNIFORM_TYPE["TINT"]),
-            1, np.array([1.0, 1.0, 1.0, 1.0], dtype = np.float32))
-        self.meshes[ENTITY_TYPE["SCREEN"]].arm_for_drawing()
-        self.meshes[ENTITY_TYPE["SCREEN"]].draw()
+        self.framebuffers[1].color_attachments[0].use(0)
+        mesh.draw()
+
+        glFlush()
     
     def destroy(self) -> None:
         """ free any allocated memory """
@@ -1357,7 +1153,6 @@ class Material2D(Material):
         with Image.open(filepath, mode = "r") as img:
             image_width,image_height = img.size
             img = img.convert("RGBA")
-            img = ImageOps.flip(img)
             img_data = bytes(img.tobytes())
             glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
         glGenerateMipmap(GL_TEXTURE_2D)
@@ -1424,7 +1219,7 @@ class ColorAttachment:
         glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, SCREEN_WIDTH, SCREEN_HEIGHT)
         glBindTexture(GL_TEXTURE_2D, 0)
     
-    def use(self, unit: int = 0) -> None:
+    def use(self, unit: int) -> None:
         """
             Bind the texture to the given unit.
         """
@@ -1558,14 +1353,13 @@ class ObjMesh(Mesh):
     __slots__ = tuple()
 
 
-    def __init__(self, filename: str,
-        pre_transform: np.ndarray = pyrr.matrix44.create_identity(dtype=np.float32)):
+    def __init__(self, filename: str):
         """
             Initialize the mesh.
         """
 
         super().__init__()
-        vertices = load_mesh(filename, pre_transform)
+        vertices = load_mesh(filename)
         self.vertex_count = len(vertices)//14
         vertices = np.array(vertices, dtype=np.float32)
 
@@ -1607,13 +1401,13 @@ class BillBoardMesh(Mesh):
         
         super().__init__()
         vertices = (
-            0, -w/2,  h/2, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0,
-            0, -w/2, -h/2, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0,
-            0,  w/2, -h/2, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0,
+            0, -w/2,  h/2, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0,
+            0, -w/2, -h/2, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0,
+            0,  w/2, -h/2, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0,
 
-            0, -w/2,  h/2, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0,
-            0,  w/2, -h/2, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0,
-            0,  w/2,  h/2, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0
+            0, -w/2,  h/2, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0,
+            0,  w/2, -h/2, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0,
+            0,  w/2,  h/2, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0
         )
         vertices = np.array(vertices, dtype=np.float32)
         self.vertex_count = 6
@@ -1673,7 +1467,6 @@ class TexturedQuad(Mesh):
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 16, ctypes.c_void_p(8))
 
 class Font:
-
 
     def __init__(self):
 
@@ -1739,7 +1532,6 @@ class Font:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
         with Image.open("gfx/Inconsolata.png", mode = "r") as img:
             image_width,image_height = img.size
-            img = ImageOps.flip(img)
             img = img.convert("RGBA")
             img_data = bytes(img.tobytes())
             glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,img_data)
@@ -1784,44 +1576,44 @@ class TextLine:
 
             #top left
             self.vertices.append(
-                self.start_position[0] - self.letter_size[0] \
-                + ((2 + margin_adjustment) * i * self.letter_size[0]))
+                self.start_position[0] - self.letter_size[0] + ((2 + margin_adjustment) * i * self.letter_size[0])
+            )
             self.vertices.append(self.start_position[1] + self.letter_size[1])
             self.vertices.append(bounding_box[0] - bounding_box[2])
             self.vertices.append(bounding_box[1] + bounding_box[3])
             #top right
             self.vertices.append(
-                self.start_position[0] + self.letter_size[0] \
-                + ((2 + margin_adjustment) * i * self.letter_size[0]))
+                self.start_position[0] + self.letter_size[0] + ((2 + margin_adjustment) * i * self.letter_size[0])
+            )
             self.vertices.append(self.start_position[1] + self.letter_size[1])
             self.vertices.append(bounding_box[0] + bounding_box[2])
             self.vertices.append(bounding_box[1] + bounding_box[3])
             #bottom right
             self.vertices.append(
-                self.start_position[0] + self.letter_size[0] \
-                + ((2 + margin_adjustment) * i * self.letter_size[0]))
+                self.start_position[0] + self.letter_size[0] + ((2 + margin_adjustment) * i * self.letter_size[0])
+            )
             self.vertices.append(self.start_position[1] - self.letter_size[1])
             self.vertices.append(bounding_box[0] + bounding_box[2])
             self.vertices.append(bounding_box[1] - bounding_box[3])
 
             #bottom right
             self.vertices.append(
-                self.start_position[0] + self.letter_size[0] \
-                + ((2 + margin_adjustment) * i * self.letter_size[0]))
+                self.start_position[0] + self.letter_size[0] + ((2 + margin_adjustment) * i * self.letter_size[0])
+            )
             self.vertices.append(self.start_position[1] - self.letter_size[1])
             self.vertices.append(bounding_box[0] + bounding_box[2])
             self.vertices.append(bounding_box[1] - bounding_box[3])
             #bottom left
             self.vertices.append(
-                self.start_position[0] - self.letter_size[0] \
-                + ((2 + margin_adjustment) * i * self.letter_size[0]))
+                self.start_position[0] - self.letter_size[0] + ((2 + margin_adjustment) * i * self.letter_size[0])
+            )
             self.vertices.append(self.start_position[1] - self.letter_size[1])
             self.vertices.append(bounding_box[0] - bounding_box[2])
             self.vertices.append(bounding_box[1] - bounding_box[3])
             #top left
             self.vertices.append(
-                self.start_position[0] - self.letter_size[0] \
-                + ((2 + margin_adjustment) * i * self.letter_size[0]))
+                self.start_position[0] - self.letter_size[0] + ((2 + margin_adjustment) * i * self.letter_size[0])
+            )
             self.vertices.append(self.start_position[1] + self.letter_size[1])
             self.vertices.append(bounding_box[0] - bounding_box[2])
             self.vertices.append(bounding_box[1] + bounding_box[3])

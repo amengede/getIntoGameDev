@@ -12,5 +12,5 @@ out vec2 fragmentTexCoord;
 void main()
 {
     gl_Position = projection * view * model * vec4(vertexPos, 1.0);
-    fragmentTexCoord = vec2(vertexTexCoord.x, 1.0 - vertexTexCoord.y);
+    fragmentTexCoord = vec2(vertexTexCoord.x, vertexTexCoord.y);
 }
