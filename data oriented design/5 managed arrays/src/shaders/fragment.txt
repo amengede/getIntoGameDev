@@ -1,0 +1,16 @@
+#version 330 core
+
+in vec3 fragmentTexCoord;
+in vec3 fragmentNormal;
+
+out vec4 screenColor;
+
+uniform sampler2DArray materials;
+
+const vec3 sunDirection = normalize(vec3(-1.0, 1.0, 1.0));
+
+void main()
+{
+    float lightStrength = max(0.2, dot(fragmentNormal, sunDirection));
+    screenColor = vec4(lightStrength * texture(materials, fragmentTexCoord).rgb, 1.0);
+}
