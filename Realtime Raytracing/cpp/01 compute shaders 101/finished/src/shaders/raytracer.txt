@@ -1,0 +1,80 @@
+#version 430
+
+struct Sphere {
+    vec3 center;
+    float radius;
+    vec3 color;
+    float padding;
+};
+
+struct Ray {
+    vec3 origin;
+    vec3 direction;
+};
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+layout(rgba32f, binding = 0) uniform image2D colorbuffer;
+uniform vec3 cameraPos;
+uniform vec3 forwards;
+uniform vec3 right;
+uniform vec3 up;
+
+const vec3 sunDirection = normalize(vec3(1.0, 1.0, 1.0));
+
+bool hit(Ray ray, Sphere sphere, inout float t) {
+    vec3 oc = ray.origin - sphere.center;
+
+    float a = dot(ray.direction, ray.direction);
+    float b = 2 * dot(oc, ray.direction);
+    float c = dot(oc, oc) - sphere.radius * sphere.radius;
+
+    float discriminant = b * b - 4 * a * c;
+    if (discriminant < 0) {
+        return false;
+    }
+
+    float t_hit = (-b - sqrt(discriminant)) / (2 * a);
+    if (t_hit < t && t_hit > 0.0001) {
+        t = t_hit;
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+void main() {
+
+    ivec2 pixelPos = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 screen_size = imageSize(colorbuffer);
+    if (pixelPos.x >= screen_size.x || pixelPos.y >= screen_size.y) {
+        return;
+    }
+
+    float aspect_ratio = float(screen_size.y) / float(screen_size.x);
+
+    float horizontal_coefficient = (2.0 * pixelPos.x - screen_size.x) / screen_size.x;
+    float vertical_coefficient = aspect_ratio * (2.0 * pixelPos.y - screen_size.y) / screen_size.y;
+
+    Ray ray;
+    ray.origin = cameraPos;
+    ray.direction = normalize(forwards + horizontal_coefficient * right + vertical_coefficient * up);
+
+    Sphere sphere;
+    sphere.center = vec3(3.0, 0.0, 0.0);
+    sphere.radius = 2.0;
+    sphere.color = vec3(1.0, 0.75, 0.5);
+
+    float t = 99999;
+
+    vec3 color = vec3(0.0);
+    if (hit(ray, sphere, t)) {
+        vec3 hit_pos = ray.origin + t * ray.direction;
+        vec3 normal = normalize(hit_pos - sphere.center);
+        float light_amount = max(0.0, dot(-sunDirection, normal));
+        color = light_amount * sphere.color;
+    }
+    
+    imageStore(colorbuffer, pixelPos, vec4(color, 1.0));
+}

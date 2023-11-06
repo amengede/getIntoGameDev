@@ -1,0 +1,14 @@
+#version 330 core
+
+in vec2 fragmentTexCoord;
+
+uniform sampler2D colorBuffer;
+
+out vec4 color;
+
+void main()
+{
+    vec4 pixel = texture(colorBuffer, fragmentTexCoord);
+    float intensity = 0.333 * (pixel.r + pixel.g + pixel.b);
+    color = vec4(vec3(intensity), 1.0);
+}
