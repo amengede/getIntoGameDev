@@ -1,0 +1,14 @@
+#version 330 core
+
+in vec3 fragmentTexCoord;
+in vec3 fragmentNormal;
+
+out vec4 screenColor;
+
+uniform sampler2DArray material;
+
+void main()
+{
+    float intensity = min(1.0, max(0.0, dot(fragmentNormal, normalize(vec3(1.0, 1.0, 1.0)))));
+    screenColor = intensity * texture(material, fragmentTexCoord);
+}
