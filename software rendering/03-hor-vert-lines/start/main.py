@@ -12,6 +12,12 @@ def clear_screen(color_buffer: np.ndarray, color: int) -> None:
     color_buffer &= uint32(0)
     color_buffer |= color
 
+@njit((uint32[:], uint32, uint32, uint32, uint32))
+def set_pixel(color_buffer: np.ndarray, x: int, y: int, 
+              color: int, height: int) -> None:
+    
+    color_buffer[x * height + y] = color
+
 class EngineFrontend:
     """
         Responsible for drawing scenes
@@ -31,14 +37,22 @@ class EngineFrontend:
         self.backend = backend.EngineBackend(width, height)
         
         self.color_buffer = self.backend.get_color_buffer()
+
+        self.colors = (
+            map_to_uint32(np.array([16, 16, 16, 255], dtype = np.uint8)), 
+            map_to_uint32(np.array([128, 128, 128, 255], dtype = np.uint8)))
     
     def draw_frame(self):
         """
             Draws a frame
         """
 
-        clear_color = map_to_uint32(np.array([32, 128, 64, 255], dtype = np.uint8))
-        clear_screen(self.color_buffer, clear_color)
+        clear_screen(self.color_buffer, self.colors[0])
+
+        for _ in range(1024):
+            x = np.random.randint(self.screenWidth)
+            y = np.random.randint(self.screenHeight)
+            set_pixel(self.color_buffer, x, y, self.colors[1], self.screenHeight)
             
         self.backend.present()
     
