@@ -3,6 +3,7 @@ BG_GRID_SIZE = 128
 RADIUS = 64
 RIGIDITY = 0.4
 SPRING_CONSTANT = 0.5
+DAMPING_COEFFICIENT = 0.2
 
 class World:
 
@@ -44,7 +45,7 @@ class World:
     def update(self, frame_time: float, velocity_x: float, velocity_y: float):
 
         rate = frame_time / 16.7
-        impulse = np.array((velocity_x - self.last_velocity_x, 
+        impulse = 0.06 * np.array((velocity_x - self.last_velocity_x, 
                             velocity_y - self.last_velocity_y, 0.0),
                             dtype = np.float32)
         self.last_velocity_x = velocity_x
@@ -74,20 +75,20 @@ class World:
         net_force_axis = 0.0
 
         #gravity
-        gravity = np.array((0,-1,0), dtype=np.float32)
-        net_force_tangent -= np.cross(gravity, axis)[2]
+        gravity = np.array((0,-0.1,0), dtype=np.float32)
+        net_force_tangent -= radius * np.cross(gravity, axis)[2]
         net_force_axis += abs(np.dot(gravity, axis))
 
         #impulse
-        net_force_tangent += np.cross(impulse, axis)[2]
-        net_force_axis -= np.dot(impulse, axis)
+        net_force_tangent += radius * np.cross(impulse, axis)[2]
+        net_force_axis -= 50 * np.dot(impulse, axis)
 
         #elasticity
         stretch = RADIUS - radius
         net_force_axis += SPRING_CONSTANT * stretch
 
-        #friction
-        self.linear_velocity *= 0.99
+        #damping
+        net_force_axis -= DAMPING_COEFFICIENT * self.linear_velocity
 
         self.angular_velocity += rate * net_force_tangent
         if abs(self.angular_velocity) < 0.001:
