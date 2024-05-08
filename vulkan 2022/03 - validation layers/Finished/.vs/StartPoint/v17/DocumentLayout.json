@@ -1,0 +1,122 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\engine.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|solutionrelative:engine.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\logging.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|solutionrelative:logging.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\logging.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|solutionrelative:logging.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\instance.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|solutionrelative:instance.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\engine.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|solutionrelative:engine.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\instance.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|solutionrelative:instance.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 3,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "logging.cpp",
+              "DocumentMoniker": "E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\logging.cpp",
+              "RelativeDocumentMoniker": "logging.cpp",
+              "ToolTip": "E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\logging.cpp",
+              "RelativeToolTip": "logging.cpp",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAACAAAAABAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2024-05-06T10:54:04.244Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "logging.h",
+              "DocumentMoniker": "E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\logging.h",
+              "RelativeDocumentMoniker": "logging.h",
+              "ToolTip": "E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\logging.h",
+              "RelativeToolTip": "logging.h",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAADUAAAARAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2024-05-06T10:44:29.228Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "engine.h",
+              "DocumentMoniker": "E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\engine.h",
+              "RelativeDocumentMoniker": "engine.h",
+              "ToolTip": "E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\engine.h",
+              "RelativeToolTip": "engine.h",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABwAAAAgAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2024-05-06T10:41:16.405Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "engine.cpp",
+              "DocumentMoniker": "E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\engine.cpp",
+              "RelativeDocumentMoniker": "engine.cpp",
+              "ToolTip": "E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\engine.cpp",
+              "RelativeToolTip": "engine.cpp",
+              "ViewState": "AQIAABsAAAAAAAAAAAAAADQAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2024-05-06T10:41:01.573Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "instance.cpp",
+              "DocumentMoniker": "E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\instance.cpp",
+              "RelativeDocumentMoniker": "instance.cpp",
+              "ToolTip": "E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\instance.cpp",
+              "RelativeToolTip": "instance.cpp",
+              "ViewState": "AQIAAH4AAAAAAAAAAAAAAJ0AAAAyAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2024-05-06T09:26:35.499Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "instance.h",
+              "DocumentMoniker": "E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\instance.h",
+              "RelativeDocumentMoniker": "instance.h",
+              "ToolTip": "E:\\dev\\getIntoGameDev\\vulkan 2022\\03 - validation layers\\Finished\\instance.h",
+              "RelativeToolTip": "instance.h",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAwAAABCAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2024-05-06T09:22:57.982Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
