@@ -113,10 +113,10 @@ uint32_t find_queue_family_index(vk::PhysicalDevice physicalDevice,
 }
 
 vk::Device create_logical_device(
-    vk::PhysicalDevice physicalDevice,
+	vk::PhysicalDevice physicalDevice,
 	vk::SurfaceKHR surface,
-    std::deque<std::function<void(vk::Device)>>& deletionQueue) {
-	
+	std::deque<std::function<void(vk::Device)>>& deletionQueue) {
+
 	Logger* logger = Logger::get_logger();
 
 	uint32_t graphicsIndex = find_queue_family_index(physicalDevice, surface, vk::QueueFlagBits::eGraphics);
@@ -131,14 +131,13 @@ vk::Device create_logical_device(
 	const char** ppEnabledLayers = nullptr;
 	if (logger->is_enabled()) {
 		enabled_layer_count = 1;
-		ppEnabledLayers = (const char**) malloc(sizeof(const char*));
+		ppEnabledLayers = (const char**)malloc(sizeof(const char*));
 		ppEnabledLayers[0] = "VK_LAYER_KHRONOS_validation";
 	}
 
-	uint32_t enabledExtensionCount = 2;
-	const char** ppEnabledExtensions = (const char**) malloc(enabledExtensionCount * sizeof(char*));
-	ppEnabledExtensions[0] = "VK_KHR_portability_subset";
-	ppEnabledExtensions[1] = "VK_KHR_swapchain";
+	uint32_t enabledExtensionCount = 1;
+	const char** ppEnabledExtensions = (const char**)malloc(enabledExtensionCount * sizeof(char*));
+	ppEnabledExtensions[0] = "VK_KHR_swapchain";
 
 	vk::DeviceCreateInfo deviceInfo = vk::DeviceCreateInfo(
 		vk::DeviceCreateFlags(),
@@ -146,7 +145,8 @@ vk::Device create_logical_device(
 		enabled_layer_count, ppEnabledLayers,
 		enabledExtensionCount, ppEnabledExtensions,
 		&deviceFeatures);
-	
+
+	vk::Device device = nullptr;
 	vk::ResultValueType<vk::Device>::type logicalDevice = physicalDevice.createDevice(deviceInfo);
 	if (logicalDevice.result == vk::Result::eSuccess) {
 		logger->print("GPU has been successfully abstracted!");
@@ -154,12 +154,18 @@ vk::Device create_logical_device(
 		deletionQueue.push_back([logger](vk::Device device) {
 			device.destroy();
 			logger->print("Deleted logical device");
-		});
+			});
 
-		return logicalDevice.value;
+		device = logicalDevice.value;
 	}
 	else {
 		logger->print("Device creation failed!");
-		return nullptr;
 	}
+	if (ppEnabledExtensions) {
+		free(ppEnabledExtensions);
+	}
+	if (ppEnabledLayers) {
+		free(ppEnabledLayers);
+	}
+	return device;
 }
