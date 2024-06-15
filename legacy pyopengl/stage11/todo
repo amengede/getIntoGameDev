@@ -1,0 +1,7 @@
+1. define filename constants (done)
+2. define a map (done)
+3. render system can draw a wall block (done)
+4. render system can draw a ceiling
+    and floor (done)
+5. world system can perform collision
+    detection (done)
