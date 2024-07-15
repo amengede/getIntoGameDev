@@ -1,0 +1,54 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "E:\\dev\\getIntoGameDev\\vulkan 2022\\15 - Swapchain Recreation\\Finished\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|E:\\dev\\getIntoGameDev\\vulkan 2022\\15 - Swapchain Recreation\\Finished\\app.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|solutionrelative:app.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|E:\\dev\\getIntoGameDev\\vulkan 2022\\15 - Swapchain Recreation\\Finished\\engine.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{0B8CA44C-38BD-4DAE-B350-F3E9BB33F8B7}|StartPoint.vcxproj|solutionrelative:engine.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "app.cpp",
+              "DocumentMoniker": "E:\\dev\\getIntoGameDev\\vulkan 2022\\15 - Swapchain Recreation\\Finished\\app.cpp",
+              "RelativeDocumentMoniker": "app.cpp",
+              "ToolTip": "E:\\dev\\getIntoGameDev\\vulkan 2022\\15 - Swapchain Recreation\\Finished\\app.cpp",
+              "RelativeToolTip": "app.cpp",
+              "ViewState": "AQIAAAwAAAAAAAAAAAAAAB4AAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2024-07-13T00:49:26.152Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "engine.cpp",
+              "DocumentMoniker": "E:\\dev\\getIntoGameDev\\vulkan 2022\\15 - Swapchain Recreation\\Finished\\engine.cpp",
+              "RelativeDocumentMoniker": "engine.cpp",
+              "ToolTip": "E:\\dev\\getIntoGameDev\\vulkan 2022\\15 - Swapchain Recreation\\Finished\\engine.cpp",
+              "RelativeToolTip": "engine.cpp",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2024-07-13T00:49:15.019Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
