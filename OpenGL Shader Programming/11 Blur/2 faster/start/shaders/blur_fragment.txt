@@ -1,0 +1,24 @@
+#version 330 core
+
+in vec2 fragmentTexCoord;
+
+out vec4 screenColor;
+
+uniform sampler2D material;
+
+void main()
+{
+    vec4 average = vec4(0.0);
+    const float kernelSize = 19.0;
+    const int halfSize = 9;
+    const float coefficient = 1.0 / (kernelSize * kernelSize);
+    const vec2 dx = vec2(0.002, 0.0);
+    const vec2 dy = vec2(0.0, 0.002);
+
+    screenColor = vec4(0.0);
+    for (int x = -halfSize; x <= halfSize; x++) {
+        for (int y = -halfSize; y <= halfSize; y++) {
+            screenColor += coefficient * texture(material, fragmentTexCoord + x * dx + y * dy);
+        }
+    }
+}
