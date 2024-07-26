@@ -1,0 +1,17 @@
+#version 330 core
+
+layout (location=0) in vec2 vertexPos;
+
+uniform vec3 forwards;
+uniform vec3 right;
+uniform vec3 up;
+
+out vec3 rayDirection;
+
+void main()
+{
+    gl_Position = vec4(vertexPos, 0.0, 1.0);
+    float x = vertexPos.x;
+    float y = vertexPos.y;
+    rayDirection = forwards + x * right + y * up;
+}
