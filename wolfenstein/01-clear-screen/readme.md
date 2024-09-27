@@ -1,7 +1,4 @@
 # Stage 1: Clearing the Screen
-Games, get into them! We've all seen games and wondered how we, as mere trogladytes can glom onto such tecnical and artistic achievements. Well ponder no more, young grasshopper. As Einstein famously said: dreams are for dreamers, and game development is for the woke. Over the course of 24 stages, we're going to build a Wolfenstein clone, from scratch, using software rendering in Pygame.
-
-
 In this stage we're going to clear the screen. A simple first step, but an important one.
 
 ## Folder Structure
