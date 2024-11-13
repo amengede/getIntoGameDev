@@ -2,6 +2,7 @@
 Python is slow, this much is known. However a fair deal less is known about how to speed it up, that's the focus of this session. After all, if we're going to get into Data Oriented Design, we'll need to get comfortable with low level programming. Let's go!
 
 ## Video
+<iframe width="560" height="315" src="https://www.youtube.com/embed/duVnp4VFKyA?si=_OX1Oq_tHQzO8LPr" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 ## Running cProfile
 Take some time to read through the naive raytracer listing. It's a pretty standard implementation inspired by [Ray Tracing in One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html).
