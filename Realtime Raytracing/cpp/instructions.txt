@@ -1,3 +1,0 @@
-For windows, there are more elegant ways of doing this, but make put the glfw library file in the build folder of the project.
-Place the dependencies folder in the project folder, at the same level as src.
-Build folder with glfw.lib, and dependencies folder has been provided here for convenience.

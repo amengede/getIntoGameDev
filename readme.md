@@ -5,68 +5,425 @@ https://youtu.be/k7Lkj-88F-A?si=Jke6N8OGJeZAmGKH
 
 I'm currently organising these folders to improve readability and reduce file duplication. From time to time a link for a video may fail, this could either be because the resource exists but has been moved, or is so out of date that it's been completely purged.
 
+Todo: Reorganise into sections
+- APIs
+- Assets
+- Data Oriented design
+- Game Engine Topics
+- Maths
+- Projects
+- Realtime Raytracing
+- Tool Engineering
+
+Bring in more languages
+
 ## Assets
-Models and Textures used in the demos. If you open a project and it complains about not having something, this is a good place to look.
+Models and Textures used in the demos. If you open a project and it complains about not having something, this is a good place to look. Some resources have the same names (eg. skyboxes), and so some digging around is required.
 
 Todo: Migrate resources from
-- graphics programming masterclass
 - gui programming in python
-- javascript for beginners
+    - editor
+        - stage 3
+        - stage 4
+        - stage 5
+    - getting started
+        - empty window
+        - hello world
+        - buttons
+        - text input
+    - grid
+    - simple map editor
 - legacy pyopengl
-- maths
+    - stage 9
+    - stage 10
+    - stage 11
+    - stage 12
+    - stage 13
+    - stage 14
 - maze board
 - multithreading
+    - basics
+    - worker threads
 - obj_loader
 - opengl shader programming
-- opengl with c++
+    - Uniform Blocks and UBOs
+        - finished
+        - start
+    - Functions
+        - finished
+        - start
+    - Subroutines
+        - finished
+        - start
+    - Cel Shading
+    - Particles and Geometry Shaders
+        - finished
+        - start
+    - Silhouette Effect
+        - adjacency triangle
+        - finished
+        - indexed drawing
+        - start
+    - Curve Tessellation
+        - finished
+        - start
+    - Quad Tessellation
+        - finished
+        - start
+    - Bezier Surfaces
+        - finished
+        - start
+    - Blur
+        - naive
+        - faster
 - pygame
 - pyopengl 2022
+    - window
+        - finished
+    - triangle
+        - finished
+        - startpoint
+    - Textures
+        - finished
+        - startpoint
+    - transformations
+        - finished
+        - startpoint
+    - loading obj Models
+        - finished
+        - startpoint
+    - blinn phong lighting
+        - finished
+        - one light
+        - startpoint
+    - billboards
+        - finished
+        - start
+    - multiple Shaders
+        - finished
+        - start
+    - advanced materials
+        - finished
+        - startpoint
+    - framebuffers and post processing
+        - finished
+        - start
+    - crt Effect
+        - finished
+        - start
+    - text
+        - finished
+        - start
+    - reflections
+        - finished
+        - start
+    - bloom
+        - finished
+        - start
+    - vertex buffer lumping
+        - finished
+        - start
+    - image array layers
+        - finished
+        - start
+    - billboards and smoke
+    - skybox
+    - shadows
+    - stencil buffer
+    - instanced rendering
+        - finished
+        - startpoint
+    - deferred Shading
+        - finished
+        - startpoint
+    - screen space ambient occlusion
+        - finished
+        - startpoint
+    - cpu framebuffer
+    - geometry lumping
+    - numba optimisation
+    - project 1
+        - finished
+        - start
+    - raytracing
+    - texture lumping
 - pyopengl 2024
+    - hello window
+    - Shaders
+    - triangles
 - python network programming
+    - stage 1
+    - stage 2
+    - stage 3
+    - stage 4
 - pyvulkan
+    - loading vulkan
+        - finished
+        - start
+    - instance
+        - finished
+        - start
+    - validation layers
+        - finished
+        - start
+    - physical devices
+        - finished
+        - start
+    - queue families
+        - finished
+        - start
+    - logical devices
+        - finished
+        - start
+    - window surface creation
+        - finished
+        - start
+    - swapchain creation
+        - finished
+        - start
+    - image views
+        - finished
+        - start
+    - SPIR-V files
+        - finished
+        - start
+    - Graphics pipeline
+        - finished
+        - start
+    - rendering
+        - finished
+        - start
+    - frames in flight
+        - finished
+        - start
+    - push constants
+        - finished
+        - start
+    - swapchain recreation
+        - finished
+        - start
+    - vertex buffers
+        - finished
+        - start
+    - multiple meshes
+        - finished
+        - start
+    - high performance memory
+        - finished
+        - start
+    - uniform buffer objects
+        - finished
+        - start
+    - storage buffers
+        - finished
+        - start
+    - Textures
+        - finished
+        - start
+    - indexed rendering
+        - finished
+        - start
 - realtime raytracing
+    - cpp
+        - Compute Shaders 101
+            - finished
+            - start
+        - Getting Data in
+            - finished
+            - start
+    - python
+        - Compute Shaders 101
+            - finished
+            - start
+        - Getting Data in
+            - faster ssbos
+            - images
+            - ssbos
+            - uniforms
+        - Planes
+            - finished
+            - start
+        - reflections
+            - finished
+            - start
+        - Noise
+            - finished
+            - start
+        - Textures
+            - finished
+            - start
+        - lighting
+            - finished
+            - start
+        - geometry manager
+            - finished
+            - start
+        - hybrid raytracer
+        - general transforms
+            - finished
+            - start
+        - acceleration structures
+            - finished
+            - start
+        - soft shadows
+            - finished
+            - start
+        - image based lighting
+            - finished
+            - start
+        - faster compute Shaders
+            - finished
+            - start
+        - surface area heuristic
+            - naive
+            - major axis subdivision
+            - binning
+            - data oriented design
+            - start
+        - triangles
+            - start
+            - finished
+        - recursive reflections
+            - finished
+            - start
+        - refractions
+            - finished
+            - start
+        - all together
+            - finished
+            - start
+        - backfaces
+            - finished
+            - start
+        - refitting
+            - finished
+            - start
 - rust
+    - Intro
+        - hello
+        - hello_sdl
+        - hello2
+    - Events
+    - Drawing the board
+        - finished
+        - start
+    - Drawing Pieces
+        - finished
+        - start
+    - Mouse Clicks
+        - finished
+        - start
+    - Constructors
+        - finished
+        - start
+    - Commands
+        - finished
+        - start
+    - Loading images
+        - finished
+        - start
+    - Calling Assembly
 - simulations
+    - boob
+    - hair
 - skeletal animation
-- software rendering
+    - json
+    - binary files
+    - static Models
+    - local transformations
+    - simple skeleton
 - summer camp sugar smash
+    - stage 1
+        - installation
+        - colors
+        - game loop
+        - text
+    - stage 2
+        - pictures
+        - pieces
+        - board
+        - abstractions
+    - stage 3
+        - Events
+        - search update
+        - board creation
+        - score
+        - new game button
+        - sounds
 - vulkan
+    - app structure
+    - instance
+        - finished
+        - start
+    - validation layers
+        - finished
+        - start
+    - physical device
+        - finished
+        - start
+    - logical device
+        - finished
+        - start
+    - surface
+        - finished
+        - start
+    - swapchain
+        - finished
+        - start
+    - image views
+        - finished
+        - start
+    - Shaders
+        - finished
+        - start
+    - command buffers
+        - finished
+        - start
+    - spir-v compilation
+        - finished
+        - start
+    - synchronisation
+        - finished
+        - start
+    - frames in flight
+        - finished
+        - start
 - vulkan 2022
-- web
-- windows
+    - loading vulkan library
+    - instance
+    - validation layers
+    - physical device
+    - queue families
+    - logical device
+    - window surface creation
+    - swapchain creation
+    - image views
+    - spir-v files
+    - graphics pipeline creation
+    - rendering
+    - frames in flight
+    - push constants
+    - swapchain recreation
+    - vertex buffers
+    - multiple meshes
+    - high speed memory
+    - uniform buffer objects
+    - storage buffers
+    - Textures
+    - indexed drawing
+    - depth buffering
+    - mipmaps
+    - multisampling
+    - obj Models
+    - directional lighting
+    - cubemaps
+    - multithreaded job system
+    - compute shader raytracing
+        - single sphere
+        - many spheres
 - wolfenstein
-
-Todo: Write up entries for
-- blindspot tech 1
-- Bounding Volume Hierarchies
-- C++ Third Party Code
-- collision detection
-- data oriented design
-- directx12
-- gameplay programming
-- graphics programming masterclass
-- gui programming in python
-- javascript for beginners
-- legacy pyopengl
-- maths
-- maze board
-- multithreading
-- obj_loader
-- opengl shader programming
-- opengl with c++
-- pygame
-- pyopengl 2022
-- pyopengl 2024
-- python network programming
-- pyvulkan
-- realtime raytracing
-- rust
-- simulations
-- skeletal animation
-- software rendering
-- summer camp sugar smash
-- vulkan
-- vulkan 2022
-- web
-- windows
-- wolfenstein
+    - clear screen
+    - vertical and horizontal lines
+    - loading and drawing map
+    - player
+    - single raycast
