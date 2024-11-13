@@ -1223,10 +1223,10 @@ class AdvancedMaterial(Material):
         """
 
         self.textures: list[Material2D] = [
-            Material2D(f"gfx/{filename}_albedo.{filetype}", 0),
-            Material2D(f"gfx/{filename}_ao.{filetype}", 1),
-            Material2D(f"gfx/{filename}_normal.{filetype}", 2),
-            Material2D(f"gfx/{filename}_specular.{filetype}", 3),
+            Material2D(f"img/{filename}_albedo.{filetype}", 0),
+            Material2D(f"img/{filename}_ao.{filetype}", 1),
+            Material2D(f"img/{filename}_normal.{filetype}", 2),
+            Material2D(f"img/{filename}_specular.{filetype}", 3),
         ]
 
     def use(self) -> None:

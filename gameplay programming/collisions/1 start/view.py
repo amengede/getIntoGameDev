@@ -233,7 +233,7 @@ class GameRenderer:
 
         self.player_debug_model = ObjModel("models", "player_mask.obj")
         self.ground_debug_model = ObjModel("models", "ground.obj")
-        self.skyBoxMaterial = CubeMapMaterial("gfx/sky")
+        self.skyBoxMaterial = CubeMapMaterial("img/sky")
         self.skyBoxModel = CubeMapModel(200, 200, 200)
         self.block_debug_model = CubeMapModel(8, 8, 1)
 

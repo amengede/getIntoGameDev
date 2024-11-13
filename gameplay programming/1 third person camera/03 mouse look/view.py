@@ -332,7 +332,7 @@ class GameRenderer:
         }
         
         self._materials: dict[int, Material] = {
-            OBJECT_TYPE_SKY: CubemapMaterial("gfx/sky")
+            OBJECT_TYPE_SKY: CubemapMaterial("img/sky")
         }
 
         self._colors: dict[int, np.ndarray] = {

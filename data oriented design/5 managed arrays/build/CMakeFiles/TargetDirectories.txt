@@ -1,3 +1,0 @@
-/home/andrew/dev/OpenGL for Beginners/week 10 cubemaps/1 start/build/CMakeFiles/hello_window.dir
-/home/andrew/dev/OpenGL for Beginners/week 10 cubemaps/1 start/build/CMakeFiles/edit_cache.dir
-/home/andrew/dev/OpenGL for Beginners/week 10 cubemaps/1 start/build/CMakeFiles/rebuild_cache.dir
