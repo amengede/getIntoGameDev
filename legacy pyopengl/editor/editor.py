@@ -1,6 +1,8 @@
+import PyQt6
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, 
-    QHBoxLayout, QLabel, QGridLayout, QPushButton
+    QHBoxLayout, QLabel, QGridLayout, QPushButton,
+    QFileDialog
 )
 from PyQt6.QtGui import (
     QAction, QPainter, QColor, QFont, QIcon, 
@@ -19,6 +21,19 @@ FLOOR = 1
 CEILING = 2
 THINGS = 3
 
+"""
+File format:
+size rows cols
+geometry
+...
+floors
+...
+ceilings
+...
+things
+player x y
+"""
+
 class Map:
 
 
@@ -34,8 +49,31 @@ class Map:
         self.floors = {}
         self.ceilings = {}
         self.player = None
+
+        self.x_min = 0
+        self.x_max = 0
+        self.y_min = 0
+        self.y_max = 0
+        self.rows = 1
+        self.cols = 1
     
+    def remember_position(self, position):
+
+        x = position[0]
+        y = position[1]
+
+        self.x_min = min(x, self.x_min)
+        self.x_max = max(x, self.x_max)
+        self.y_min = min(y, self.y_min)
+        self.y_max = max(y, self.y_max)
+        self.rows = self.y_max - self.y_min + 1
+        self.cols = self.x_max - self.x_min + 1
+
     def add_wall(self, position, index):
+
+        self.remember_position(position)
+
+        self.remember_position(position)
 
         self.geometry[position] = index
 
@@ -47,6 +85,8 @@ class Map:
     
     def add_door(self, position):
 
+        self.remember_position(position)
+
         self.geometry[position] = "d"
 
         self.remove_floor(position)
@@ -57,17 +97,23 @@ class Map:
 
     def add_floor(self, position, index):
 
+        self.remember_position(position)
+
         self.remove_geometry(position)
 
         self.floors[position] = index
 
     def add_ceiling(self, position, index):
 
+        self.remember_position(position)
+
         self.remove_geometry(position)
         
         self.ceilings[position] = index
 
     def add_player(self, position):
+
+        self.remember_position(position)
 
         self.remove_geometry(position)
 
@@ -96,6 +142,145 @@ class Map:
         if (position[0] == self.player[0] and position[1] == self.player[1]):
             self.player = None
 
+    def save(self, filename):
+
+        with open(filename, "w") as file:
+
+            self.save_size(file)
+
+            self.save_geometry(file)
+
+            self.save_floors(file)
+
+            self.save_ceilings(file)
+
+            self.save_things(file)
+    
+    def save_size(self, file):
+
+        file.write(f"size {self.rows} {self.cols}\n")
+    
+    def save_geometry(self, file):
+
+        file.write("geometry\n")
+
+        self.save_array(file, self.geometry)
+    
+    def save_floors(self, file):
+
+        file.write("floors\n")
+
+        self.save_array(file, self.floors)
+    
+    def save_ceilings(self, file):
+
+        file.write("ceilings\n")
+
+        self.save_array(file, self.ceilings)
+    
+    def save_array(self, file, src: dict):
+
+        data = [["0" for j in range(self.cols)] for i in range(self.rows)]
+        
+        for (position, entry) in src.items():
+            if entry == "d":
+                parsed_entry = "d"
+            else:
+                parsed_entry = str(int(entry) + 1)
+            i = position[1] - self.y_min
+            j = position[0] - self.x_min
+            print(f"rows: {self.rows}, columns: {self.cols}")
+            print(f"Original: ({position[1]}, {position[0]}), shifted: ({i}, {j})")
+            data[position[1] - self.y_min]\
+                [position[0] - self.x_min] = parsed_entry
+
+        for y in range(self.rows):
+            for x in range(self.cols):
+                file.write(data[y][x])
+                file.write(" ")
+            file.write("\n")
+    
+    def save_things(self, file):
+
+        file.write(f"things\n")
+        if self.player is not None:
+            file.write(f"player {self.player[0]} {self.player[1]}")
+    
+    def load(self, filename):
+
+        self.geometry = {}
+        self.floors = {}
+        self.ceilings = {}
+        self.player = None
+
+        with open(filename, "r") as file:
+
+            self.load_size(file)
+
+            self.load_geometry(file)
+
+            self.load_floors(file)
+
+            self.load_ceilings(file)
+
+            self.load_things(file)
+    
+    def load_size(self, file):
+
+        line = file.readline().replace("\n","")
+        line = line.split(" ")
+        self.rows = int(line[1])
+        self.cols = int(line[2])
+        self.x_min = 0
+        self.y_min = 0
+        self.x_max = self.cols - 1
+        self.y_max = self.rows - 1
+    
+    def load_geometry(self, file):
+
+        file.readline()
+
+        self.load_array(file, self.geometry)
+    
+    def load_floors(self, file):
+
+        file.readline()
+
+        self.load_array(file, self.floors)
+    
+    def load_ceilings(self, file):
+
+        file.readline()
+
+        self.load_array(file, self.ceilings)
+    
+    def load_array(self, file, src):
+
+        for y in range(self.rows):
+            line = file.readline().replace("\n","")
+            line = line.split(" ")
+            for x in range(self.cols):
+
+                if line[x] == "0":
+                    continue
+                
+                if line[x] == "d":
+                    parsed_entry = "d"
+                else:
+                    parsed_entry = str(int(line[x]) - 1)
+                
+                src[(x,y)] = parsed_entry
+    
+    def load_things(self, file):
+
+        line = file.readline()
+        while line:
+            line = line.replace("\n","")
+            line = line.split(" ")
+            if line[0] == "player":
+                self.player = (int(line[1]),int(line[2]))
+            line = file.readline()
+    
 class Editor(QMainWindow):
 
 
@@ -173,14 +358,21 @@ class Editor(QMainWindow):
     def newMap(self):
 
         self.map = Map()
+        self.map_container.repaint()
     
     def saveMap(self):
 
-        print("save map")
+        filename = QFileDialog.getSaveFileName(self)
+        if len(filename[0]) > 0:
+            self.map.save(filename[0])
+        self.map_container.repaint()
     
     def loadMap(self):
 
-        print("load map")
+        filename = QFileDialog.getOpenFileName(self)
+        if len(filename[0]) > 0:
+            self.map.load(filename[0])
+        self.map_container.repaint()
 
     def MakeWidgetsAndLayouts(self):
 
@@ -636,6 +828,7 @@ class PropertyEditor(QWidget):
         self.setLayout(self.layout)
 
 class ImageSelector(QWidget):
+
 
     def __init__(self, width, height, image):
 

@@ -59,22 +59,22 @@ class MainView(QWidget):
         self.move_icons = {
             CAMERA_MOVE_LEFT: {
                 "dst_rect": QRect(544, 416, 32, 32),
-                "pixmap": QPixmap("gfx/left-arrow.png", "png"),
+                "pixmap": QPixmap("img/left-arrow.png", "png"),
                 "src_rect": QRect(0,0,512,512)
             },
             CAMERA_MOVE_RIGHT: {
                 "dst_rect": QRect(608, 416, 32, 32),
-                "pixmap": QPixmap("gfx/right-arrow.png", "png"),
+                "pixmap": QPixmap("img/right-arrow.png", "png"),
                 "src_rect": QRect(0,0,512,512)
             },
             CAMERA_MOVE_UP: {
                 "dst_rect": QRect(576, 384, 32, 32),
-                "pixmap": QPixmap("gfx/up-arrow.png", "png"),
+                "pixmap": QPixmap("img/up-arrow.png", "png"),
                 "src_rect": QRect(0,0,512,512)
             },
             CAMERA_MOVE_DOWN: {
                 "dst_rect": QRect(576, 448, 32, 32),
-                "pixmap": QPixmap("gfx/down-arrow.png", "png"),
+                "pixmap": QPixmap("img/down-arrow.png", "png"),
                 "src_rect": QRect(0,0,512,512)
             },
         }

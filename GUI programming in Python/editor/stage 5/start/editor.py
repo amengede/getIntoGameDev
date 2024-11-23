@@ -128,25 +128,25 @@ class Editor(QMainWindow):
         ]
 
         self.DOOR_IMAGES = [
-            QPixmap("gfx/textures/doors/door02_7.jpg","jpg"),
+            QPixmap("img/textures/doors/door02_7.jpg","jpg"),
         ]
 
         self.FLOOR_IMAGES = [
-            QPixmap("gfx/textures/floors/plat_top2.jpg","jpg"),
-            QPixmap("gfx/textures/floors/sfloor1_2.jpg","jpg"),
-            QPixmap("gfx/textures/floors/sfloor4_2.jpg","jpg"),
-            QPixmap("gfx/textures/floors/sfloor4_4.jpg","jpg"),
-            QPixmap("gfx/textures/floors/sfloor4_6.jpg","jpg"),
-            QPixmap("gfx/textures/floors/sfloor4_7.jpg","jpg")
+            QPixmap("img/textures/floors/plat_top2.jpg","jpg"),
+            QPixmap("img/textures/floors/sfloor1_2.jpg","jpg"),
+            QPixmap("img/textures/floors/sfloor4_2.jpg","jpg"),
+            QPixmap("img/textures/floors/sfloor4_4.jpg","jpg"),
+            QPixmap("img/textures/floors/sfloor4_6.jpg","jpg"),
+            QPixmap("img/textures/floors/sfloor4_7.jpg","jpg")
         ]
 
         self.WALL_IMAGES = [
-            QPixmap("gfx/textures/walls/comp1_1.jpg","jpg"),
-            QPixmap("gfx/textures/walls/tech01_2.jpg","jpg"),
-            QPixmap("gfx/textures/walls/tech01_7.jpg","jpg"),
-            QPixmap("gfx/textures/walls/tech08_1.jpg","jpg"),
-            QPixmap("gfx/textures/walls/tech09_3.jpg","jpg"),
-            QPixmap("gfx/textures/walls/twall2_6.jpg","jpg")
+            QPixmap("img/textures/walls/comp1_1.jpg","jpg"),
+            QPixmap("img/textures/walls/tech01_2.jpg","jpg"),
+            QPixmap("img/textures/walls/tech01_7.jpg","jpg"),
+            QPixmap("img/textures/walls/tech08_1.jpg","jpg"),
+            QPixmap("img/textures/walls/tech09_3.jpg","jpg"),
+            QPixmap("img/textures/walls/twall2_6.jpg","jpg")
         ]
 
         self.newMap()
@@ -591,9 +591,9 @@ class TypeSelector(QWidget):
         self.setFixedSize(QSize(width, height))
 
         self.layout = QHBoxLayout()
-        self.left_brush_button = QPushButton(QIcon(QPixmap("gfx/left-arrow.png", "png")),"")
+        self.left_brush_button = QPushButton(QIcon(QPixmap("img/left-arrow.png", "png")),"")
         self.label = QLabel(BRUSHES[0])
-        self.right_brush_button = QPushButton(QIcon(QPixmap("gfx/right-arrow.png", "png")),"")
+        self.right_brush_button = QPushButton(QIcon(QPixmap("img/right-arrow.png", "png")),"")
         self.layout.addWidget(self.left_brush_button)
         self.layout.addWidget(self.label)
         self.layout.addWidget(self.right_brush_button)
@@ -610,10 +610,10 @@ class MapController(QWidget):
 
         self.layout = QGridLayout()
 
-        self.move_up_button = QPushButton(QIcon(QPixmap("gfx/up-arrow.png", "png")),"")
-        self.move_down_button = QPushButton(QIcon(QPixmap("gfx/down-arrow.png", "png")),"")
-        self.move_left_button = QPushButton(QIcon(QPixmap("gfx/left-arrow.png", "png")),"")
-        self.move_right_button = QPushButton(QIcon(QPixmap("gfx/right-arrow.png", "png")),"")
+        self.move_up_button = QPushButton(QIcon(QPixmap("img/up-arrow.png", "png")),"")
+        self.move_down_button = QPushButton(QIcon(QPixmap("img/down-arrow.png", "png")),"")
+        self.move_left_button = QPushButton(QIcon(QPixmap("img/left-arrow.png", "png")),"")
+        self.move_right_button = QPushButton(QIcon(QPixmap("img/right-arrow.png", "png")),"")
 
         self.layout.addWidget(self.move_up_button, 0, 1)
         self.layout.addWidget(self.move_left_button, 1, 0)
@@ -650,8 +650,8 @@ class ImageSelector(QWidget):
 
         self.buttonLayout = QHBoxLayout()
         self.buttonContainer = QWidget()
-        self.left_button = QPushButton(QIcon(QPixmap("gfx/left-arrow.png", "png")),"")
-        self.right_button = QPushButton(QIcon(QPixmap("gfx/right-arrow.png", "png")),"")
+        self.left_button = QPushButton(QIcon(QPixmap("img/left-arrow.png", "png")),"")
+        self.right_button = QPushButton(QIcon(QPixmap("img/right-arrow.png", "png")),"")
         self.buttonLayout.addWidget(self.left_button)
         self.buttonLayout.addWidget(self.right_button)
         self.buttonContainer.setLayout(self.buttonLayout)

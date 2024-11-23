@@ -37,9 +37,9 @@ BOARD_MODEL = ObjModel("models/board.obj")
 WALL_MODEL = ObjModel("models/wall.obj")
 BALL_MODEL = ObjModel("models/ball.obj")
 ########################TEXTURES####################################
-BOARD = Texture("textures/board.jpg")
-WALL = Texture("textures/wall.jpg")
-BALL = Texture("textures/glass.png")
+BOARD = Texture("img/board.jpg")
+WALL = Texture("img/wall.jpg")
+BALL = Texture("img/glass.png")
 ####################################################################
 
 #(field of view, aspect ratio,near,far)
