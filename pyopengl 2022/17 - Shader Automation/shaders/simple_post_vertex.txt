@@ -6,5 +6,5 @@ out vec2 fragmentTexCoord;
 
 void main() {
     gl_Position = vec4(vertexPos, 0.0, 1.0);
-    fragmentTexCoord = vertexTexCoord;
+    fragmentTexCoord = vec2(vertexTexCoord.x, vertexTexCoord.y);
 }
