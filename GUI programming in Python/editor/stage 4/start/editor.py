@@ -307,9 +307,9 @@ class TypeSelector(QWidget):
         self.setFixedSize(QSize(width, height))
 
         self.layout = QHBoxLayout()
-        self.left_brush_button = QPushButton(QIcon(QPixmap("gfx/left-arrow.png", "png")),"")
+        self.left_brush_button = QPushButton(QIcon(QPixmap("img/left-arrow.png", "png")),"")
         self.label = QLabel(BRUSHES[0])
-        self.right_brush_button = QPushButton(QIcon(QPixmap("gfx/right-arrow.png", "png")),"")
+        self.right_brush_button = QPushButton(QIcon(QPixmap("img/right-arrow.png", "png")),"")
         self.layout.addWidget(self.left_brush_button)
         self.layout.addWidget(self.label)
         self.layout.addWidget(self.right_brush_button)
@@ -340,10 +340,10 @@ class MapController(QWidget):
 
         self.layout = QGridLayout()
 
-        self.move_up_button = QPushButton(QIcon(QPixmap("gfx/up-arrow.png", "png")),"")
-        self.move_down_button = QPushButton(QIcon(QPixmap("gfx/down-arrow.png", "png")),"")
-        self.move_left_button = QPushButton(QIcon(QPixmap("gfx/left-arrow.png", "png")),"")
-        self.move_right_button = QPushButton(QIcon(QPixmap("gfx/right-arrow.png", "png")),"")
+        self.move_up_button = QPushButton(QIcon(QPixmap("img/up-arrow.png", "png")),"")
+        self.move_down_button = QPushButton(QIcon(QPixmap("img/down-arrow.png", "png")),"")
+        self.move_left_button = QPushButton(QIcon(QPixmap("img/left-arrow.png", "png")),"")
+        self.move_right_button = QPushButton(QIcon(QPixmap("img/right-arrow.png", "png")),"")
 
         self.layout.addWidget(self.move_up_button, 0, 1)
         self.layout.addWidget(self.move_left_button, 1, 0)
