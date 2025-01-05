@@ -1,0 +1,80 @@
+#version 330 core
+
+struct Material {
+    sampler2DArray albedo;
+    sampler2DArray ao;
+    sampler2DArray normal;
+    sampler2DArray specular;
+};
+
+struct Light {
+    vec3 color;
+    float strength;
+};
+
+in vec3 fragmentPos;
+in vec2 fragmentTexCoord;
+in float fragmentLightCount;
+in vec3 fragmentViewPos;
+in vec3 fragmentLightPos[8];
+
+uniform Material material;
+uniform Light lights[8];
+uniform float material_index;
+uniform float material_count;
+
+layout (location=0) out vec4 color;
+layout (location=1) out vec4 bright_color;
+
+vec3 CalculatePointLight(int i, vec3 normal);
+
+void main()
+{
+    float layer = max(0, min(material_count - 1, floor(material_index + 0.5)));
+    vec3 texCoord = vec3(fragmentTexCoord, layer);
+
+    vec3 normal = normalize(2.0 * texture(material.normal, texCoord).rgb - vec3(1.0));
+    float alpha = texture(material.albedo, texCoord).a;
+    
+    //ambient
+    vec3 lightLevel = 0.2 * vec3(texture(material.albedo, texCoord)) * texture(material.ao, texCoord).rgb;
+
+    for (int i = 0; i < 8; i++) {
+        float distance = length(fragmentLightPos[i] - fragmentPos);
+        lightLevel += CalculatePointLight(i, normal) / (distance * distance);
+    }
+
+    if (length(lightLevel) < 2) {
+        color = vec4(lightLevel, alpha);
+        bright_color = vec4(vec3(0.0),alpha);
+    }
+    else {
+        color = vec4(vec3(0.0),alpha);
+        bright_color = vec4(lightLevel, alpha);
+    }
+}
+
+vec3 CalculatePointLight(int i, vec3 normal) {
+
+    float layer = max(0, min(material_count - 1, floor(material_index + 0.5)));
+    vec3 texCoord = vec3(fragmentTexCoord, layer);
+
+    //directions
+	vec3 lightDir = normalize(fragmentLightPos[i] - fragmentPos);
+    vec3 viewDir = normalize(fragmentViewPos - fragmentPos);
+    vec3 halfDir = normalize(lightDir + viewDir);
+
+    vec3 baseTexture = vec3(texture(material.albedo, texCoord));
+
+    vec3 specular = vec3(texture(material.specular, texCoord));
+
+    float gloss = max(0.0, min(1.0, length(specular)));
+
+    //diffuse
+	vec3 result = (1 - gloss) * lights[i].color * lights[i].strength * max(0.0,dot(normal,lightDir)) * baseTexture;
+	
+    //specular
+    result += gloss * lights[i].color * lights[i].strength * pow(max(dot(normal, halfDir), 0.0), max(32,floor(1024 * gloss))) * specular;
+    
+    return result;
+}

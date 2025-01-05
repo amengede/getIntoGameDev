@@ -163,4 +163,54 @@ def readFrom(self, partition_index: int) -> None:
             self.device_memory, partition.offset, partition.size)
 ```
 
-In the next video we'll look at how to adapt this buffer to also handle traditional vertex and index buffers.
+## VBOs and EBOs
+This method works just fine for storage buffers, can we apply it to traditional rendering too? The answer is yes. Rather than having the vertex and index data sitting in two different GPU allocations, we can create a single allocation large enough to hold all the data, memcopy into regions of that allocation, and then instruct OpenGL how to recover the info.
+
+Here is the basic layout: vertex data sits at the front of the buffer and index data sits after that. This is because indexed drawing takes a byte offset, whereas vertex data is expected to start from the beginning of the buffer.
+
+![buffer_layout](img/rendering_buffer_layout.png)
+
+Admittedly, the mesh loading code is messy. I've cleaned it up a little, but it would be a bit much to go in depth on. The basic idea is every mesh can be parsed individually to produce a vertex and index array. The engine can then take those arrays and concatenate them together into two large vertex and index arrays. As we do this we're recording a base vertex, base index and index count.
+
+The base vertex is the offset to be added to index data, so that index data always points to the appropriate region of vertex data.
+
+![base_vertex](img/base_vertex.png)
+
+The base index is a byte offset describing the beginning of the range of index data.
+
+![base_index](img/base_index.png)
+
+The base vertex method is a handy way of sticking multiple meshes together into one large buffer. Somehow I missed it when I was learning this technique originally. With that in mind, let's refactor our code!
+
+First we construct a buffer to hold all the data.
+```
+mesh_buffer = buffer.Buffer()
+vertex_partition = mesh_buffer.add_partition(vertices.nbytes, np.float32, GL_ARRAY_BUFFER, 0)
+index_partition = mesh_buffer.add_partition(indices.nbytes, np.uint32, GL_ELEMENT_ARRAY_BUFFER, 1)
+mesh_buffer.build()
+self.mesh_buffers[FULL_ATTRIBUTES] = mesh_buffer
+```
+
+Then upload all the consolidated data that we loaded earlier.
+
+```
+mesh_buffer.bind(vertex_partition)
+mesh_buffer.blit(vertex_partition, vertices)
+
+mesh_buffer.bind(index_partition)
+mesh_buffer.blit(index_partition, indices)
+```
+
+Now when it comes time to render, we add the EBO's offset within the buffer to the local offset of the mesh being rendered.
+```
+mesh_buffer: buffer.Buffer = self.mesh_buffers[FULL_ATTRIBUTES]
+global_offset = mesh_buffer.partitions[1].offset
+local_offset = self.offsets[FULL_ATTRIBUTES][obj.mesh_type][1]
+base_index = ctypes.c_void_p(local_offset + global_offset)
+```
+
+And there we have it! It's fascinating how a simple change in memory layout changes performance significantly.
+
+![before](img/before.png)
+
+![after](img/after.png)
