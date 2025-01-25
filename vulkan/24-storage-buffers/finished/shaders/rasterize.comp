@@ -1,0 +1,36 @@
+#version 450
+
+struct Vertex {
+    vec2 position;
+    vec2 padding1;
+    vec3 color;
+    float padding2;
+};
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout (set = 0, binding = 0, rgba8) uniform image2D colorBuffer;
+layout (std140, set = 1, binding = 0) readonly buffer vertexBuffer {
+    Vertex vertices[];
+};
+
+void main() {
+
+    int index = int(gl_GlobalInvocationID.x);
+    vec2 screen_size = 0.5 * vec2(imageSize(colorBuffer));
+
+    if (index >= 1) {
+        return;
+    }
+
+    int triangle_index = 3 * index;
+    for (int i = 0; i < 3; i++) {
+        vec2 position = vertices[triangle_index].position;
+        ivec2 screen_pos = ivec2(screen_size * (1 + position));
+        vec3 color = vertices[triangle_index++].color;
+
+        if (screen_pos.x < 0 || screen_pos.x >= 2 * screen_size.x || screen_pos.y < 0 || screen_pos.y >= 2 * screen_size.y) {
+            continue;
+        }
+        imageStore(colorBuffer, screen_pos, vec4(color, 1.0));
+    }
+}
