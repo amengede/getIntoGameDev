@@ -1,0 +1,20 @@
+#version 450
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout (set = 0, binding = 0, rgba8) uniform image2D colorBuffer;
+
+void main() {
+
+    int index = int(gl_GlobalInvocationID.x);
+    ivec2 screen_size = imageSize(colorBuffer);
+
+    ivec2 screen_pos = ivec2(floor(index / screen_size.y), mod(index, screen_size.y));
+
+    if (screen_pos.x >= screen_size.x || screen_pos.y >= screen_size.y) {
+        return;
+    }
+
+    vec3 pixel_color = vec3(1.0, 0.8, 0.8);
+
+    imageStore(colorBuffer, screen_pos, vec4(pixel_color, 1.0));
+}
