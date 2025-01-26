@@ -1,0 +1,59 @@
+#version 450
+
+struct Vertex {
+    vec2 position;
+    vec2 padding1;
+    vec3 color;
+    float padding2;
+};
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout (set = 0, binding = 0, rgba8) uniform image2D colorBuffer;
+layout (std140, set = 1, binding = 0) readonly buffer vertexBuffer {
+    Vertex vertices[];
+};
+
+void draw_line(Vertex vert_a, Vertex vert_b) {
+
+    vec2 screen_size = 0.5 * vec2(imageSize(colorBuffer));
+
+    vec2 pos_a = screen_size * (1 + vert_a.position);
+    vec3 color_a = vert_a.color;
+    vec2 pos_b = screen_size * (1 + vert_b.position);
+    vec3 color_b = vert_b.color;
+
+    float distance = length(pos_b - pos_a);
+    vec2 d_pos = (pos_b - pos_a) / distance;
+    vec3 d_color = (color_b - color_a) / distance;
+
+    ivec2 pos = ivec2(pos_a);
+    for (int i = 0; i < distance; i++) {
+
+        if (!(pos.x < 0 || pos.x >= 2 * screen_size.x || pos.y < 0 || pos.y >= 2 * screen_size.y)) {
+            imageStore(colorBuffer, pos, vec4(color_a, 1.0));
+        }
+        
+        pos_a += d_pos;
+        pos = ivec2(pos_a);
+        color_a += d_color;
+    }
+}
+
+void main() {
+
+    int index = int(gl_GlobalInvocationID.x);
+
+    if (index >= 1) {
+        return;
+    }
+
+    int triangle_index = 3 * index;
+
+    Vertex vertex_a = vertices[triangle_index];
+    Vertex vertex_b = vertices[triangle_index + 1];
+    Vertex vertex_c = vertices[triangle_index + 2];
+    
+    draw_line(vertex_a, vertex_b);
+    draw_line(vertex_b, vertex_c);
+    draw_line(vertex_c, vertex_a);
+}
