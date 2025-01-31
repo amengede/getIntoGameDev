@@ -1,0 +1,25 @@
+#version 450
+#extension GL_EXT_shader_image_int64 : require
+#extension GL_KHR_memory_scope_semantics : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout (set = 0, binding = 0, r64ui) uniform u64image2D colorBuffer;
+
+void main() {
+
+    ivec2 screen_pos = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 screen_size = imageSize(colorBuffer);
+
+    if (screen_pos.x < 0 || screen_pos.x >= screen_size.x || screen_pos.y < 0 || screen_pos.y >= screen_size.y) {
+        return;
+    }
+
+    uint64_t depthClearValue = uint64_t(floatBitsToInt(1.0)) << 32;
+    uint64_t r = 0 << 24;
+    uint64_t g = 0 << 16;
+    uint64_t b = 0 << 8;
+    uint64_t a = 0;
+    uint64_t depthAndColor = uint64_t(depthClearValue | r | g | b | a);
+    imageAtomicStore(colorBuffer, screen_pos, depthAndColor, gl_ScopeInvocation, gl_StorageSemanticsImage, gl_SemanticsRelaxed);
+}
