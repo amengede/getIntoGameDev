@@ -6,14 +6,6 @@ https://youtu.be/k7Lkj-88F-A?si=Jke6N8OGJeZAmGKH
 I'm currently organising these folders to improve readability and reduce file duplication. From time to time a link for a video may fail, this could either be because the resource exists but has been moved, or is so out of date that it's been completely purged.
 
 Todo: Reorganise into sections
-- APIs
-- Assets
-- Data Oriented design
-- Dependencies
-- Game Engine Topics
-- Maths
-- Projects
-- Realtime Raytracing
 - Tool Engineering
 
 Bring in more languages
@@ -21,284 +13,26 @@ Bring in more languages
 ## Assets
 Models and Textures used in the demos. If you open a project and it complains about not having something, this is a good place to look. Some resources have the same names (eg. skyboxes), and so some digging around is required.
 
-Todo: Migrate resources from
-- pyopengl 2024
-    - hello window
-    - Shaders
-    - triangles
-- python network programming
-    - stage 1
-    - stage 2
-    - stage 3
-    - stage 4
-- pyvulkan
-    - loading vulkan
-        - finished
-        - start
-    - instance
-        - finished
-        - start
-    - validation layers
-        - finished
-        - start
-    - physical devices
-        - finished
-        - start
-    - queue families
-        - finished
-        - start
-    - logical devices
-        - finished
-        - start
-    - window surface creation
-        - finished
-        - start
-    - swapchain creation
-        - finished
-        - start
-    - image views
-        - finished
-        - start
-    - SPIR-V files
-        - finished
-        - start
-    - Graphics pipeline
-        - finished
-        - start
-    - rendering
-        - finished
-        - start
-    - frames in flight
-        - finished
-        - start
-    - push constants
-        - finished
-        - start
-    - swapchain recreation
-        - finished
-        - start
-    - vertex buffers
-        - finished
-        - start
-    - multiple meshes
-        - finished
-        - start
-    - high performance memory
-        - finished
-        - start
-    - uniform buffer objects
-        - finished
-        - start
-    - storage buffers
-        - finished
-        - start
-    - Textures
-        - finished
-        - start
-    - indexed rendering
-        - finished
-        - start
-- realtime raytracing
-    - cpp
-        - Compute Shaders 101
-            - finished
-            - start
-        - Getting Data in
-            - finished
-            - start
-    - python
-        - Compute Shaders 101
-            - finished
-            - start
-        - Getting Data in
-            - faster ssbos
-            - images
-            - ssbos
-            - uniforms
-        - Planes
-            - finished
-            - start
-        - reflections
-            - finished
-            - start
-        - Noise
-            - finished
-            - start
-        - Textures
-            - finished
-            - start
-        - lighting
-            - finished
-            - start
-        - geometry manager
-            - finished
-            - start
-        - hybrid raytracer
-        - general transforms
-            - finished
-            - start
-        - acceleration structures
-            - finished
-            - start
-        - soft shadows
-            - finished
-            - start
-        - image based lighting
-            - finished
-            - start
-        - faster compute Shaders
-            - finished
-            - start
-        - surface area heuristic
-            - naive
-            - major axis subdivision
-            - binning
-            - data oriented design
-            - start
-        - triangles
-            - start
-            - finished
-        - recursive reflections
-            - finished
-            - start
-        - refractions
-            - finished
-            - start
-        - all together
-            - finished
-            - start
-        - backfaces
-            - finished
-            - start
-        - refitting
-            - finished
-            - start
-- rust
-    - Intro
-        - hello
-        - hello_sdl
-        - hello2
-    - Events
-    - Drawing the board
-        - finished
-        - start
-    - Drawing Pieces
-        - finished
-        - start
-    - Mouse Clicks
-        - finished
-        - start
-    - Constructors
-        - finished
-        - start
-    - Commands
-        - finished
-        - start
-    - Loading images
-        - finished
-        - start
-    - Calling Assembly
-- simulations
-    - boob
-    - hair
-- skeletal animation
-    - json
-    - binary files
-    - static Models
-    - local transformations
-    - simple skeleton
-- summer camp sugar smash
-    - stage 1
-        - installation
-        - colors
-        - game loop
-        - text
-    - stage 2
-        - pictures
-        - pieces
-        - board
-        - abstractions
-    - stage 3
-        - Events
-        - search update
-        - board creation
-        - score
-        - new game button
-        - sounds
-- vulkan
-    - app structure
-    - instance
-        - finished
-        - start
-    - validation layers
-        - finished
-        - start
-    - physical device
-        - finished
-        - start
-    - logical device
-        - finished
-        - start
-    - surface
-        - finished
-        - start
-    - swapchain
-        - finished
-        - start
-    - image views
-        - finished
-        - start
-    - Shaders
-        - finished
-        - start
-    - command buffers
-        - finished
-        - start
-    - spir-v compilation
-        - finished
-        - start
-    - synchronisation
-        - finished
-        - start
-    - frames in flight
-        - finished
-        - start
-- vulkan 2022
-    - loading vulkan library
-    - instance
-    - validation layers
-    - physical device
-    - queue families
-    - logical device
-    - window surface creation
-    - swapchain creation
-    - image views
-    - spir-v files
-    - graphics pipeline creation
-    - rendering
-    - frames in flight
-    - push constants
-    - swapchain recreation
-    - vertex buffers
-    - multiple meshes
-    - high speed memory
-    - uniform buffer objects
-    - storage buffers
-    - Textures
-    - indexed drawing
-    - depth buffering
-    - mipmaps
-    - multisampling
-    - obj Models
-    - directional lighting
-    - cubemaps
-    - multithreaded job system
-    - compute shader raytracing
-        - single sphere
-        - many spheres
-- wolfenstein
-    - clear screen
-    - vertical and horizontal lines
-    - loading and drawing map
-    - player
-    - single raycast
+## C++ Third Party Code
+As a convencience, headers for common libraries such as GLFW and GLM etc. are in here.
+
+## APIs
+Graphics API-specific tutorials.
+
+## Data Oriented Design
+Take a walk on the wild side.
+
+## Game Engine Topics
+Tutorials which either could be used to build an engine, or demonstrate particularly well designed systems.
+
+## Maths
+Nothing here, yet.
+
+## Projects
+Practical applications of topics. You can expand on these to make your own stuff!
+
+## Realtime Raytracing
+It's just neat!
+
+## Tool Engineering
+An often overlooked aspect of game development. High quality tools make high quality games. I personally use PyQT for all my tool engineering, being a good combination of stable and expressive.

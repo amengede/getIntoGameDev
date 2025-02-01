@@ -1,5 +1,6 @@
 .DS_Store
 ._*
+.vscode
 
 ## User settings
 xcuserdata/
