@@ -15,8 +15,6 @@ As a convencience, headers for common libraries such as GLFW and GLM etc. are in
 Graphics API-specific tutorials.
 
 TODO: Re-examine/write markdown tutorials for
-- d3d12
-    - adapter
 - OpenGL Shader Programming
     - Uniform Blocks and UBOs
     - Functions
