@@ -1,0 +1,26 @@
+#version 330 core
+
+in vec2 fragmentTexCoord;
+
+uniform sampler2DArray imageTexture;
+uniform float material_index;
+uniform float material_count;
+uniform vec3 tint;
+
+layout (location=0) out vec4 color;
+layout (location=1) out vec4 bright_color;
+
+void main()
+{
+    float layer = max(0, min(material_count - 1, floor(material_index + 0.5)));
+    vec4 result = vec4(tint, 1) * texture(imageTexture, vec3(fragmentTexCoord, layer));
+    float alpha = result.a;
+    if (length(result) < 2) {
+        color = result;
+        bright_color = vec4(vec3(0.0),alpha);
+    }
+    else {
+        color = vec4(vec3(0.0), alpha);
+        bright_color = result;
+    }
+}
