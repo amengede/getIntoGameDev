@@ -63,7 +63,7 @@ private:
     /**
     * @brief dynamic instance dispatcher
     */
-    vk::DispatchLoaderDynamic dldi;
+    vk::detail::DispatchLoaderDynamic dldi;
 
     /**
     * @brief Debug messenger

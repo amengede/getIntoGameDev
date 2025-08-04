@@ -15,7 +15,7 @@ Frame::Frame(vk::Image image, vk::Device logicalDevice,
 
 void Frame::set_command_buffer(vk::CommandBuffer newCommandBuffer, 
 	std::vector<vk::ShaderEXT>& shaders, vk::Extent2D frameSize, 
-	vk::DispatchLoaderDynamic& dl) {
+	vk::detail::DispatchLoaderDynamic& dl) {
 
 	commandBuffer = newCommandBuffer;
 
@@ -27,7 +27,7 @@ void Frame::set_command_buffer(vk::CommandBuffer newCommandBuffer,
 	transition_image_layout(commandBuffer, image,
 		vk::ImageLayout::eUndefined, vk::ImageLayout::eAttachmentOptimal,
 		vk::AccessFlagBits::eNone, vk::AccessFlagBits::eColorAttachmentWrite,
-		vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eFragmentShader);
+		vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eColorAttachmentOutput);
 
 	annoying_boilerplate_that_dynamic_rendering_was_meant_to_spare_us(
 		frameSize, dl);
@@ -47,7 +47,7 @@ void Frame::set_command_buffer(vk::CommandBuffer newCommandBuffer,
 	transition_image_layout(commandBuffer, image,
 		vk::ImageLayout::eAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR,
 		vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eNone,
-		vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eBottomOfPipe);
+		vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eBottomOfPipe);
 
 	commandBuffer.end();
 }
@@ -104,7 +104,7 @@ void Frame::build_color_attachment() {
 }
 
 void Frame::annoying_boilerplate_that_dynamic_rendering_was_meant_to_spare_us(
-	vk::Extent2D frameSize, vk::DispatchLoaderDynamic& dl) {
+	vk::Extent2D frameSize, vk::detail::DispatchLoaderDynamic& dl) {
 
 	vk::Viewport viewport = 
 		vk::Viewport(0.0f, 0.0f, frameSize.width, frameSize.height, 0.0f, 1.0f);

@@ -127,7 +127,7 @@ std::vector<uint32_t> compile_file(CompilationInfo& info) {
 }
 
 std::vector<vk::ShaderEXT> make_shader_objects(vk::Device logicalDevice, 
-    const char* name, vk::DispatchLoaderDynamic& dl,
+    const char* name, vk::detail::DispatchLoaderDynamic& dl,
     std::deque<std::function<void(vk::Device)>>& deviceDeletionQueue) {
 
     Logger* logger = Logger::get_logger();

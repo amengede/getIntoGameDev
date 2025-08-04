@@ -35,7 +35,7 @@ public:
     */
     void set_command_buffer(vk::CommandBuffer newCommandBuffer,
         std::vector<vk::ShaderEXT>& shaders, vk::Extent2D frameSize,
-        vk::DispatchLoaderDynamic& dl);
+        vk::detail::DispatchLoaderDynamic& dl);
 
     /**
      * @brief swapchain image to render to
@@ -75,7 +75,7 @@ private:
     *
     */
     void annoying_boilerplate_that_dynamic_rendering_was_meant_to_spare_us(
-        vk::Extent2D frameSize, vk::DispatchLoaderDynamic& dl);
+        vk::Extent2D frameSize, vk::detail::DispatchLoaderDynamic& dl);
 
     vk::RenderingInfoKHR renderingInfo = {};
 

@@ -1,0 +1,56 @@
+#version 330 core
+#extension GL_ARB_separate_shader_objects : enable
+#define MAX_LIGHT_COUNT 8
+
+struct Light {
+    vec3 pos;
+    vec3 color;
+    float strength;
+    bool enabled;
+};
+
+layout (location=0) in vec3 fragmentPos;
+layout (location=1) in vec2 fragmentTexCoord;
+layout (location=2) in vec3 fragmentNormal;
+
+uniform sampler2D diffuse;
+uniform Light lights[MAX_LIGHT_COUNT];
+uniform vec3 cameraPos;
+uniform vec3 ambient;
+
+vec4 CalculatePointLight(Light light, vec3 cameraPosition, vec3 fragmentPosition, vec3 normal, vec2 texCoord);
+
+layout (location=0) out vec4 regular_colour;
+layout (location=1) out vec4 bright_colour;
+
+void main()
+{
+    vec4 lightLevel = vec4(0.0);
+    
+    //ambient
+    //lightLevel += texture(diffuse, fragmentTexCoord);
+    
+    for (int i = 0; i < MAX_LIGHT_COUNT; i++) {
+        if (lights[i].enabled) {
+            lightLevel += CalculatePointLight(lights[i], cameraPos, fragmentPos, fragmentNormal, fragmentTexCoord);
+        }
+    }
+    
+
+    regular_colour = lightLevel;
+}
+
+vec4 CalculatePointLight(Light light, vec3 cameraPosition, vec3 fragmentPosition, vec3 normal, vec2 texCoord) {
+
+    //directions
+	vec3 lightDir = normalize(light.pos - fragmentPosition);
+    vec3 viewDir = normalize(cameraPosition - fragmentPosition);
+
+    int inverseDensity = 16;
+
+    float parallel = pow(max(0.0,dot(-viewDir, lightDir)),inverseDensity);
+
+    //diffuse
+	//return light.color * max(0.0,dot(viewDir, lightDir)) * vec3(texture(diffuse, texCoord));
+    return parallel * vec4(light.color, 1.0) * texture(diffuse, texCoord);
+}

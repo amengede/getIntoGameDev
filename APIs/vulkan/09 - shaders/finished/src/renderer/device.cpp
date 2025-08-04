@@ -41,13 +41,18 @@ bool is_suitable(const vk::PhysicalDevice& device) {
 	* A device is suitable if it can present to the screen, ie support
 	* the swapchain extension
 	*/
-	const char* ppRequestedExtension = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+	uint32_t enabledExtensionCount = 2;
+	const char** ppRequestedExtensions = (const char**)malloc(enabledExtensionCount * sizeof(char*));
+	ppRequestedExtensions[0] = "VK_KHR_swapchain";
+	ppRequestedExtensions[1] = "VK_EXT_shader_object";
 
-	if (supports(device, &ppRequestedExtension, 1)) {
+	if (supports(device, ppRequestedExtensions, 2)) {
 		logger->print("Device can support the requested extensions!");
+		free(ppRequestedExtensions);
 	}
 	else {
 		logger->print("Device can't support the requested extensions!");
+		free(ppRequestedExtensions);
 		return false;
 	}
 	return true;
@@ -150,6 +155,14 @@ vk::Device create_logical_device(
 	deviceInfo.pNext = &shaderFeatures;
 	
 	vk::ResultValueType<vk::Device>::type logicalDevice = physicalDevice.createDevice(deviceInfo);
+
+	if (ppEnabledExtensions) {
+		free(ppEnabledExtensions);
+	}
+	if (ppEnabledLayers) {
+		free(ppEnabledLayers);
+	}
+
 	if (logicalDevice.result == vk::Result::eSuccess) {
 		logger->print("GPU has been successfully abstracted!");
 

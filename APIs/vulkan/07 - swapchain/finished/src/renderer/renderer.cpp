@@ -8,7 +8,7 @@ Engine::Engine(GLFWwindow* window) :
 	logger->print("Made a graphics engine");
 
 	instance = make_instance("Real Engine", instanceDeletionQueue);
-	dldi = vk::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
+	dldi = vk::detail::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
 	debugMessenger = logger->make_debug_messenger(instance, dldi, instanceDeletionQueue);
 	logger->set_mode(false);
 

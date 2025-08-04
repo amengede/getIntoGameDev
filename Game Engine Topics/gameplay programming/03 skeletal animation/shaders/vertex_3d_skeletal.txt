@@ -1,0 +1,30 @@
+#version 330 core
+
+layout (location=0) in vec3 vertexPos;
+layout (location=1) in vec3 vertexNormal;
+layout (location=2) in vec2 vertexTexCoord;
+layout (location=3) in vec2 vertexTexCoord2;
+layout (location=4) in ivec4 vertexJoints;
+layout (location=5) in vec4 vertexWeights;
+
+uniform mat4 model;
+uniform mat4 viewProj;
+
+//layout (std140) uniform skeleton {
+//    mat4 transforms[40];
+//}
+uniform mat4[35] bone_transforms;
+
+out vec3 fragmentNormal;
+out vec2 fragmentTexCoord;
+
+void main()
+{
+    mat4 bone_transform = vertexWeights[0] * bone_transforms[vertexJoints[0]]
+                        + vertexWeights[1] * bone_transforms[vertexJoints[1]]
+                        + vertexWeights[2] * bone_transforms[vertexJoints[2]]
+                        + vertexWeights[3] * bone_transforms[vertexJoints[3]];
+    gl_Position = viewProj * model * bone_transform * vec4(vertexPos, 1.0);
+    fragmentNormal = (model * bone_transform * vec4(vertexNormal, 0)).xyz;
+    fragmentTexCoord = vertexTexCoord;
+}

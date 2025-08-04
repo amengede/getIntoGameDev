@@ -37,20 +37,23 @@ bool is_suitable(const vk::PhysicalDevice& device) {
 	Logger* logger = Logger::get_logger();
 	logger->print("Checking if device is suitable");
 
-	/*
-	* A device is suitable if it can present to the screen, ie support
-	* the swapchain extension
-	*/
-	const char* ppRequestedExtension = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+	const char** ppRequestedExtensions = (const char**)malloc(4 * sizeof(char*));
+	ppRequestedExtensions[0] = "VK_KHR_swapchain";
+	ppRequestedExtensions[1] = "VK_EXT_shader_object";
+	ppRequestedExtensions[2] = "VK_KHR_dynamic_rendering";
+	ppRequestedExtensions[3] = "VK_KHR_synchronization2";
 
-	if (supports(device, &ppRequestedExtension, 1)) {
+	bool supported = supports(device, ppRequestedExtensions, 4);
+	free(ppRequestedExtensions);
+
+	if (supported) {
 		logger->print("Device can support the requested extensions!");
+		return true;
 	}
 	else {
 		logger->print("Device can't support the requested extensions!");
 		return false;
 	}
-	return true;
 }
 
 vk::PhysicalDevice choose_physical_device(const vk::Instance& instance) {
@@ -126,9 +129,12 @@ vk::Device create_logical_device(
 	);
 
 	vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
+	vk::PhysicalDeviceSynchronization2Features synch2 = vk::PhysicalDeviceSynchronization2Features();
+	synch2.synchronization2 = true;
 	vk::PhysicalDeviceShaderObjectFeaturesEXT shaderFeatures = vk::PhysicalDeviceShaderObjectFeaturesEXT(1);
 	vk::PhysicalDeviceDynamicRenderingFeaturesKHR dynamicFeatures = vk::PhysicalDeviceDynamicRenderingFeaturesKHR(1);
 	shaderFeatures.pNext = &dynamicFeatures;
+	dynamicFeatures.pNext = &synch2;
 
 	uint32_t enabled_layer_count = 1;
 	const char** ppEnabledLayers = nullptr;
@@ -138,11 +144,12 @@ vk::Device create_logical_device(
 		ppEnabledLayers[0] = "VK_LAYER_KHRONOS_validation";
 	}
 
-	uint32_t enabledExtensionCount = 3;
+	uint32_t enabledExtensionCount = 4;
 	const char** ppEnabledExtensions = (const char**) malloc(enabledExtensionCount * sizeof(char*));
 	ppEnabledExtensions[0] = "VK_KHR_swapchain";
 	ppEnabledExtensions[1] = "VK_EXT_shader_object";
 	ppEnabledExtensions[2] = "VK_KHR_dynamic_rendering";
+	ppEnabledExtensions[3] = "VK_KHR_synchronization2";
 
 	vk::DeviceCreateInfo deviceInfo = vk::DeviceCreateInfo(
 		vk::DeviceCreateFlags(),

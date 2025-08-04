@@ -15,10 +15,11 @@ vk::Semaphore make_semaphore(vk::Device& logicalDevice,
     vk::SemaphoreCreateInfo semaphoreInfo;
     
     vk::Semaphore semaphore = logicalDevice.createSemaphore(semaphoreInfo).value;
+    VkSemaphore handle = semaphore;
 
-    deviceDeletionQueue.push_back([&semaphore, logger](vk::Device device) {
-        device.destroySemaphore(semaphore);
-        logger->print("Destroyed semaphere");
+    deviceDeletionQueue.push_back([handle, logger](vk::Device device) {
+        vkDestroySemaphore(device, handle, nullptr);
+        logger->print("Destroyed semaphore");
     });
 
     return semaphore;
@@ -40,8 +41,10 @@ vk::Fence make_fence(vk::Device& logicalDevice,
 
     vk::Fence fence = logicalDevice.createFence(fenceInfo).value;
 
-    deviceDeletionQueue.push_back([&fence, logger](vk::Device device) {
-        device.destroyFence(fence);
+    VkFence handle = fence;
+
+    deviceDeletionQueue.push_back([handle, logger](vk::Device device) {
+        vkDestroyFence(device, handle, nullptr);
         logger->print("Destroyed fence");
     });
 

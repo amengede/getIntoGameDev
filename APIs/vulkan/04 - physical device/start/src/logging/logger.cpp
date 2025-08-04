@@ -85,7 +85,7 @@ void Logger::print_layers(std::vector<vk::LayerProperties>& layers) {
 }
 
 vk::DebugUtilsMessengerEXT Logger::make_debug_messenger(
-	vk::Instance& instance, vk::DispatchLoaderDynamic& dldi,
+	vk::Instance& instance, vk::detail::DispatchLoaderDynamic& dldi,
 	std::deque<std::function<void(vk::Instance)>>& deletionQueue) {
 
 	if (!enabled) {
@@ -104,7 +104,7 @@ vk::DebugUtilsMessengerEXT Logger::make_debug_messenger(
 		vk::DebugUtilsMessengerCreateFlagsEXT(),
 		vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
 		vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
-		debugCallback,
+		reinterpret_cast<vk::PFN_DebugUtilsMessengerCallbackEXT>(debugCallback),
 		nullptr
 	);
 

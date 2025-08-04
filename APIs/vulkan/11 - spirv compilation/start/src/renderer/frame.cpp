@@ -15,7 +15,7 @@ Frame::Frame(vk::Image image, vk::Device logicalDevice,
 
 void Frame::set_command_buffer(vk::CommandBuffer newCommandBuffer, 
 	std::vector<vk::ShaderEXT>& shaders, vk::Extent2D frameSize, 
-	vk::DispatchLoaderDynamic& dl) {
+	vk::detail::DispatchLoaderDynamic& dl) {
 
 	commandBuffer = newCommandBuffer;
 
@@ -104,7 +104,7 @@ void Frame::build_color_attachment() {
 }
 
 void Frame::annoying_boilerplate_that_dynamic_rendering_was_meant_to_spare_us(
-	vk::Extent2D frameSize, vk::DispatchLoaderDynamic& dl) {
+	vk::Extent2D frameSize, vk::detail::DispatchLoaderDynamic& dl) {
 
 	vk::Viewport viewport = 
 		vk::Viewport(0.0f, 0.0f, frameSize.width, frameSize.height, 0.0f, 1.0f);

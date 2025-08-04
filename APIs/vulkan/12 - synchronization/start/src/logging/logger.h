@@ -78,7 +78,7 @@ public:
     * @return the created messenger
     */
     vk::DebugUtilsMessengerEXT make_debug_messenger(
-        vk::Instance& instance, vk::DispatchLoaderDynamic& dldi, 
+        vk::Instance& instance, vk::detail::DispatchLoaderDynamic& dldi, 
         std::deque<std::function<void(vk::Instance)>>& deletionQueue);
 
     /**

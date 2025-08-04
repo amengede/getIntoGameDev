@@ -85,7 +85,7 @@ void Logger::print_layers(std::vector<vk::LayerProperties>& layers) {
 }
 
 vk::DebugUtilsMessengerEXT Logger::make_debug_messenger(
-	vk::Instance& instance, vk::DispatchLoaderDynamic& dldi,
+	vk::Instance& instance, vk::detail::DispatchLoaderDynamic& dldi,
 	std::deque<std::function<void(vk::Instance)>>& deletionQueue) {
 
 	if (!enabled) {

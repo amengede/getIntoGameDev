@@ -148,11 +148,15 @@ vk::Device create_logical_device(vk::PhysicalDevice physicalDevice,
 	/*
 	* Extensions
 	*/
-	uint32_t enabledExtensionCount = 1;
-	const char** ppEnabledExtensions = (const char**)malloc(enabledExtensionCount * sizeof(char*));
-
+	uint32_t enabledExtensionCount = 0;
+	const char** ppEnabledExtensions = nullptr;
 	uint32_t offset = 0;
+
+#if __APPLE__
+	enabledExtensionCount += 1;
+	ppEnabledExtensions = (const char**)malloc(enabledExtensionCount * sizeof(char*));
 	ppEnabledExtensions[offset++] = "VK_KHR_portability_subset";
+#endif
 
 	vk::DeviceCreateInfo deviceInfo = vk::DeviceCreateInfo(
 		vk::DeviceCreateFlags(), 
@@ -164,6 +168,13 @@ vk::Device create_logical_device(vk::PhysicalDevice physicalDevice,
 	
 	vk::ResultValueType<vk::Device>::type logicalDevice = 
 		physicalDevice.createDevice(deviceInfo);
+
+	if (ppEnabledExtensions) {
+		free(ppEnabledExtensions);
+	}
+	if (ppEnabledLayers) {
+		free(ppEnabledLayers);
+	}
 	if (logicalDevice.result == vk::Result::eSuccess) {
 		logger->print("GPU has been successfully abstracted!");
 

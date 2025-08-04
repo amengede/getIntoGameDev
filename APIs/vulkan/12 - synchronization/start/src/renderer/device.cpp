@@ -37,13 +37,16 @@ bool is_suitable(const vk::PhysicalDevice& device) {
 	Logger* logger = Logger::get_logger();
 	logger->print("Checking if device is suitable");
 
-	/*
-	* A device is suitable if it can present to the screen, ie support
-	* the swapchain extension
-	*/
-	const char* ppRequestedExtension = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+	uint32_t enabledExtensionCount = 4;
+	const char** ppEnabledExtensions = (const char**)malloc(enabledExtensionCount * sizeof(char*));
+	ppEnabledExtensions[0] = "VK_KHR_swapchain";
+	ppEnabledExtensions[1] = "VK_EXT_shader_object";
+	ppEnabledExtensions[2] = "VK_KHR_dynamic_rendering";
+	ppEnabledExtensions[3] = "VK_KHR_synchronization2";
 
-	if (supports(device, &ppRequestedExtension, 1)) {
+	bool supported = supports(device, ppEnabledExtensions, enabledExtensionCount);
+
+	if (supported) {
 		logger->print("Device can support the requested extensions!");
 	}
 	else {
@@ -144,11 +147,12 @@ vk::Device create_logical_device(
 		ppEnabledLayers[0] = "VK_LAYER_KHRONOS_validation";
 	}
 
-	uint32_t enabledExtensionCount = 3;
+	uint32_t enabledExtensionCount = 4;
 	const char** ppEnabledExtensions = (const char**) malloc(enabledExtensionCount * sizeof(char*));
 	ppEnabledExtensions[0] = "VK_KHR_swapchain";
 	ppEnabledExtensions[1] = "VK_EXT_shader_object";
 	ppEnabledExtensions[2] = "VK_KHR_dynamic_rendering";
+	ppEnabledExtensions[3] = "VK_KHR_synchronization2";
 
 	vk::DeviceCreateInfo deviceInfo = vk::DeviceCreateInfo(
 		vk::DeviceCreateFlags(),

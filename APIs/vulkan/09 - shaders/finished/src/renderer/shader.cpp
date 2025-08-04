@@ -4,7 +4,7 @@
 #include <vector>
 
 std::vector<vk::ShaderEXT> make_shader_objects(vk::Device logicalDevice, 
-    const char* vertexFilename, const char* fragmentFilename, vk::DispatchLoaderDynamic& dl,
+    const char* vertexFilename, const char* fragmentFilename, vk::detail::DispatchLoaderDynamic& dl,
     std::deque<std::function<void(vk::Device)>>& deviceDeletionQueue) {
 
     Logger* logger = Logger::get_logger();
