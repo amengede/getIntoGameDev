@@ -1,4 +1,8 @@
 #include "shader.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <glad/glad.h>
 
 unsigned int util::load_shader(const char* vertexFilepath, const char* fragmentFilepath) {
 	

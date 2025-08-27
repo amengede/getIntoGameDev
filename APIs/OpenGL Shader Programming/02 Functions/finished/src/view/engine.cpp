@@ -1,8 +1,12 @@
 #include "engine.h"
+#include "shader.h"
+#include <iostream>
+#include <memory.h>
+#include <glad/glad.h>
 
 Engine::Engine(int width, int height) {
 
-	shader = util::load_shader("shaders/vertex.txt", "shaders/fragment.txt");
+	shader = util::load_shader("src/shaders/vertex.txt", "src/shaders/fragment.txt");
 	glUseProgram(shader);
 
 	glUniform1i(glGetUniformLocation(shader, "basicTexture"), 0);
@@ -64,8 +68,9 @@ void Engine::configure_uniform_block() {
 	memcpy(blockBuffer + offset[2], &innerRadius, sizeof(float));
 	memcpy(blockBuffer + offset[3], &outerRadius, sizeof(float));
 
-	glCreateBuffers(1, &UBO);
-	glNamedBufferStorage(UBO, blockSize, blockBuffer, GL_DYNAMIC_STORAGE_BIT);
+	glGenBuffers(1, &UBO);
+	glBindBuffer(GL_UNIFORM_BUFFER, UBO);
+	glBufferData(GL_UNIFORM_BUFFER, blockSize, blockBuffer, GL_STATIC_DRAW);
 }
 
 void Engine::render() {

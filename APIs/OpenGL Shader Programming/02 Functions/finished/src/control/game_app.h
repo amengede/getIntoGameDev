@@ -1,6 +1,6 @@
 #pragma once
-#include "../config.h"
 #include "../view/engine.h"
+#include <GLFW/glfw3.h>
 
 struct GameAppCreateInfo {
 	int width;
