@@ -1,7 +1,6 @@
 #pragma once
-#include "../config.h"
-#include "shader.h"
 #include "quadmesh.h"
+#include <glad/glad.h>
 
 class Engine {
 public:

@@ -1,3 +1,0 @@
--xc++
--std=c++20
--I../dependencies

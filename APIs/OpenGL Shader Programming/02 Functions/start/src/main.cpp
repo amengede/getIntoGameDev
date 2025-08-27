@@ -1,4 +1,4 @@
-#include "config.h"
+#define GLFW_INCLUDE_NONE
 #include "control/game_app.h"
 
 int main() {

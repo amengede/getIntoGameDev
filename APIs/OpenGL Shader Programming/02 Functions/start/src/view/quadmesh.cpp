@@ -1,4 +1,5 @@
 #include "quadmesh.h"
+#include <glad/glad.h>
 
 QuadMesh::QuadMesh(float w, float h) {
 
@@ -15,25 +16,20 @@ QuadMesh::QuadMesh(float w, float h) {
 
 	vertexCount = 6;
 
-	glCreateBuffers(1, &VBO);
+	glGenBuffers(1, &VBO);
 
-	glCreateVertexArrays(1, &VAO);
+	glGenVertexArrays(1, &VAO);
 
-	//(VAO, binding index, VBO, offset, stride)
-	glVertexArrayVertexBuffer(VAO, 0, VBO, 0, 4 * sizeof(float));
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-	//(VBO, size in bytes, pointer to data start, mode)
-	glNamedBufferStorage(VBO, vertices.size() * sizeof(float), vertices.data(), GL_DYNAMIC_STORAGE_BIT);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 16, (void*)0);
 
-	glEnableVertexArrayAttrib(VAO, 0);
-	glEnableVertexArrayAttrib(VAO, 1);
-	//(VAO, location, size, type, should be normalized, (void*)offset)
-	glVertexArrayAttribFormat(VAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
-	glVertexArrayAttribFormat(VAO, 1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float));
-	//(VAO, location, binding)
-	glVertexArrayAttribBinding(VAO, 0, 0);
-	glVertexArrayAttribBinding(VAO, 1, 0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 16, (void*)8);
 }
 
 QuadMesh::~QuadMesh(){

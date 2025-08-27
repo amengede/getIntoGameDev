@@ -1,5 +1,5 @@
 #pragma once
-#include "../config.h"
+#include <vector>
 
 class QuadMesh {
 public:
