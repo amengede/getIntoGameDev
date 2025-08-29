@@ -1,25 +1,28 @@
 #include "obj_mesh.h"
+#include "obj_loader.h"
+#include <glad/glad.h>
 
 ObjMesh::ObjMesh(MeshCreateInfo* createInfo) {
 
 	std::vector<float> vertices = 
 		util::load_model_from_file(createInfo->filename, createInfo->preTransform);
 	vertexCount = int(vertices.size()) / 8;
-	glCreateBuffers(1, &VBO);
-	glCreateVertexArrays(1, &VAO);
-	glVertexArrayVertexBuffer(VAO, 0, VBO, 0, 8 * sizeof(float));
-	glNamedBufferStorage(
-		VBO, vertices.size() * sizeof(float), vertices.data(), GL_DYNAMIC_STORAGE_BIT);
+
 	//pos: 0, texcoord: 1, normal: 2
-	glEnableVertexArrayAttrib(VAO, 0);
-	glEnableVertexArrayAttrib(VAO, 1);
-	glEnableVertexArrayAttrib(VAO, 2);
-	glVertexArrayAttribFormat(VAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
-	glVertexArrayAttribFormat(VAO, 1, 2, GL_FLOAT, GL_FALSE, 3 * sizeof(float));
-	glVertexArrayAttribFormat(VAO, 2, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float));
-	glVertexArrayAttribBinding(VAO, 0, 0);
-	glVertexArrayAttribBinding(VAO, 1, 0);
-	glVertexArrayAttribBinding(VAO, 2, 0);
+	glGenBuffers(1, &VBO);
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 32, (void*)0);
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 32, (void*)12);
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 32, (void*)20);
 }
 
 ObjMesh::~ObjMesh() {

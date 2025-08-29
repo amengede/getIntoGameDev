@@ -1,5 +1,5 @@
 #pragma once
-#include "../config.h"
+#include <glm/glm.hpp>
 
 struct LightCreateInfo {
 	glm::vec3 position, color;

@@ -1,8 +1,6 @@
 #pragma once
-#include "../config.h"
+#include <array>
 #include "../model/scene.h"
-#include "shader.h"
-#include "rectangle_model.h"
 #include "obj_mesh.h"
 #include "material.h"
 

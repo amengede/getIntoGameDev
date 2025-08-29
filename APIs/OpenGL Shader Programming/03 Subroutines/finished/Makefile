@@ -1,6 +1,6 @@
 CPP_COMPILER = g++
 C_COMPILER = gcc
-SRC_DIRS = src src/control src/view
+SRC_DIRS = src src/control src/view src/model
 
 INCLUDE_FOLDER = -Idependencies
 OS_NAME := $(shell uname -s)

@@ -1,4 +1,3 @@
-#include "config.h"
 #include "control/game_app.h"
 
 int main() {

@@ -1,5 +1,6 @@
 #pragma once
-#include "../config.h"
+#include <vector>
+#include <glm/glm.hpp>
 
 struct RectangleModelCreateInfo {
 	glm::vec3 size;
