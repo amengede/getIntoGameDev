@@ -3,7 +3,7 @@
 Scene::Scene() {
 
 	PlayerCreateInfo playerInfo;
-	playerInfo.eulers = { 0.0f, 90.0f,0.0f };
+	playerInfo.eulers = { 0.0f, 0.0f,0.0f };
 	playerInfo.position = { 0.0f, 0.0f, 1.0f };
 	player = new Player(&playerInfo);
 
