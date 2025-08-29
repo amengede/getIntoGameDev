@@ -1,5 +1,5 @@
 #pragma once
-#include "../config.h"
+#include <vector>
 #include "cube.h"
 #include "player.h"
 #include "light.h"

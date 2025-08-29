@@ -1,8 +1,14 @@
 #include "engine.h"
+#include "shader.h"
+#include <glad/glad.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <sstream>
 
 Engine::Engine(int width, int height) {
 
-	shader = util::load_shader("shaders/vertex.txt", "shaders/fragment.txt");
+	shader = util::load_shader("src/shaders/vertex.txt", "src/shaders/fragment.txt");
 	glUseProgram(shader);
 
 	glUniform1i(glGetUniformLocation(shader, "basicTexture"), 0);
@@ -51,7 +57,7 @@ void Engine::createModels() {
 
 void Engine::createMaterials() {
 	MaterialCreateInfo materialInfo;
-	materialInfo.filename = "textures/wood.jpeg";
+	materialInfo.filename = "img/wood.jpeg";
 	woodMaterial = new Material(&materialInfo);
 }
 

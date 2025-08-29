@@ -1,4 +1,5 @@
 #include "rectangle_model.h"
+#include <glad/glad.h>
 
 RectangleModel::RectangleModel(RectangleModelCreateInfo* createInfo) {
 
@@ -58,16 +59,18 @@ RectangleModel::RectangleModel(RectangleModelCreateInfo* createInfo) {
 		-l,  w, -h, 0.0f, 1.0f
 	} };
 	vertexCount = vertices.size() / 5;
-	glCreateBuffers(1, &VBO);
-	glCreateVertexArrays(1, &VAO);
-	glVertexArrayVertexBuffer(VAO, 0, VBO, 0, 5 * sizeof(float));
-	glNamedBufferStorage(VBO, vertices.size() * sizeof(float), vertices.data(), GL_DYNAMIC_STORAGE_BIT);
-	glEnableVertexArrayAttrib(VAO, 0);
-	glEnableVertexArrayAttrib(VAO, 1);
-	glVertexArrayAttribFormat(VAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
-	glVertexArrayAttribFormat(VAO, 1, 2, GL_FLOAT, GL_FALSE, 3 * sizeof(float));
-	glVertexArrayAttribBinding(VAO, 0, 0);
-	glVertexArrayAttribBinding(VAO, 1, 0);
+
+	glGenBuffers(1, &VBO);
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 20, (void*)0);
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 20, (void*)12);
 }
 
 RectangleModel::~RectangleModel() {

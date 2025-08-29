@@ -1,6 +1,7 @@
 #include "obj_loader.h"
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
+#include <iostream>
 
 std::vector<float> util::load_model_from_file(const char* filename, glm::mat4 preTransform) {
 	

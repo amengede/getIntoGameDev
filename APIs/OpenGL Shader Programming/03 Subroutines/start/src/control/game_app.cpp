@@ -1,4 +1,6 @@
 #include "game_app.h"
+#include <iostream>
+#include <sstream>
 
 GameApp::GameApp(GameAppCreateInfo* createInfo) {
 	this->width = createInfo->width;

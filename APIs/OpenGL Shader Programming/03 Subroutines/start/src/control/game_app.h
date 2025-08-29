@@ -1,5 +1,6 @@
 #pragma once
-#include "../config.h"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include "../model/scene.h"
 #include "../view/engine.h"
 

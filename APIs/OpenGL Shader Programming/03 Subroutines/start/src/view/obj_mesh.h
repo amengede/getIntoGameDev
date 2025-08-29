@@ -1,6 +1,5 @@
 #pragma once
-#include "../config.h"
-#include "obj_loader.h"
+#include <glm/glm.hpp>
 
 struct MeshCreateInfo {
 	const char* filename;

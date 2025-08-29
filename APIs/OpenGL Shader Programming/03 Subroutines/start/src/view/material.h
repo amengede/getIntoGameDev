@@ -1,6 +1,4 @@
 #pragma once
-#include "../config.h"
-#include "image.h"
 
 struct MaterialCreateInfo {
 	const char* filename;
