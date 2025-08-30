@@ -8,6 +8,42 @@ from framebuffers import *
 from materials import *
 from meshes import *
 
+class RenderPass:
+    """
+        Describes the resources that will be touched by a set of rendering
+        operations.
+    """
+
+    def __init__(self, depth_enabled: bool, clear_depth: bool, clear_color: bool):
+
+        self.has_depth_test = depth_enabled
+        self.clear_mask = 0
+        if clear_depth:
+            self.clear_mask |= GL_DEPTH_BUFFER_BIT
+        if clear_color:
+            self.clear_mask |= GL_COLOR_BUFFER_BIT
+        self.draw_targets = []
+
+    def add_framebuffer(self, framebuffer: Framebuffer) -> "RenderPass":
+
+        self.framebuffer = framebuffer
+        return self
+
+    def add_draw_target(self, target: int) -> "RenderPass":
+
+        self.draw_targets.append(target)
+        return self
+
+    def begin(self) -> None:
+
+        self.framebuffer.draw_to()
+        glDrawBuffers(len(self.draw_targets), self.draw_targets)
+        glClear(self.clear_mask)
+        if self.has_depth_test:
+            glEnable(GL_DEPTH_TEST)
+        else:
+            glDisable(GL_DEPTH_TEST)
+
 def post_renderpass(shader: int,
                     src: Framebuffer,
                     dst: Framebuffer) -> None:
@@ -46,6 +82,8 @@ class GraphicsEngine:
 
         self.create_framebuffers()
 
+        self.create_renderpasses()
+
         self.setup_shaders()
 
     def set_up_opengl(self) -> None:
@@ -72,6 +110,46 @@ class GraphicsEngine:
             framebuffer.add_color_attachment()
             framebuffer.add_depth_stencil_attachment()
             self.framebuffers.append(framebuffer)
+
+    def create_renderpasses(self) -> None:
+        """
+            Create renderpasses
+        """
+
+        self.scene_renderpass = RenderPass(depth_enabled = True,
+            clear_depth = True,
+            clear_color = True)\
+            .add_framebuffer(self.framebuffers[0])\
+            .add_draw_target(GL_COLOR_ATTACHMENT0)\
+            .add_draw_target(GL_COLOR_ATTACHMENT1)
+
+        self.bloom_renderpasses = [
+            RenderPass(depth_enabled = False,
+                clear_depth = False,
+                clear_color = False)\
+            .add_framebuffer(self.framebuffers[0])\
+            .add_draw_target(GL_COLOR_ATTACHMENT1),
+
+            RenderPass(depth_enabled = False,
+                clear_depth = False,
+                clear_color = False)\
+            .add_framebuffer(self.framebuffers[1])\
+            .add_draw_target(GL_COLOR_ATTACHMENT1)
+        ]
+
+        self.post_renderpasses = [
+            RenderPass(depth_enabled = False,
+                clear_depth = False,
+                clear_color = False)\
+            .add_framebuffer(self.framebuffers[0])\
+            .add_draw_target(GL_COLOR_ATTACHMENT0),
+
+            RenderPass(depth_enabled = False,
+                clear_depth = False,
+                clear_color = False)\
+            .add_framebuffer(self.framebuffers[1])\
+            .add_draw_target(GL_COLOR_ATTACHMENT0)
+        ]
 
     def setup_shaders(self) -> None:
         """
@@ -199,11 +277,7 @@ class GraphicsEngine:
         view_transform = scene.player.camera.matrix
         view_position = scene.player.transform.position
 
-        self.framebuffers[0].draw_to()
-
-        glDrawBuffers(2, (GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1))
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glEnable(GL_DEPTH_TEST)
+        self.scene_renderpass.begin()
 
         pipeline_type = PIPELINE_TYPE_LIT
         shader = self.shaders[pipeline_type]
@@ -279,13 +353,11 @@ class GraphicsEngine:
         self.render_scene_objects(scene)
 
         #Post processing pass
-        glDisable(GL_DEPTH_TEST)
         glBindVertexArray(self.screen.vao)
 
         #Bloom
-        for i in range(2):
-            self.framebuffers[i].draw_to()
-            glDrawBuffers(1, (GL_COLOR_ATTACHMENT1,))
+        for renderpass in self.bloom_renderpasses:
+            renderpass.begin()
         for _ in range(8):
 
             post_renderpass(self.shaders[PIPELINE_TYPE_BLOOM_BLUR],
@@ -296,9 +368,8 @@ class GraphicsEngine:
                             src=self.framebuffers[1],
                             dst=self.framebuffers[0])
 
-        for i in range(2):
-            self.framebuffers[i].draw_to()
-            glDrawBuffers(1, (GL_COLOR_ATTACHMENT0,))
+        for renderpass in self.post_renderpasses:
+            renderpass.begin()
 
         post_renderpass(self.shaders[PIPELINE_TYPE_BLOOM_RESOLVE],
                         src=self.framebuffers[0],

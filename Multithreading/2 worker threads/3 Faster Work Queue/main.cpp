@@ -132,6 +132,7 @@ int main() {
 				WorkerThread(workQueue, done, i)
 			)
 		);
+		workerThreads[i].detach();
 	}
 
 	while (true) {
