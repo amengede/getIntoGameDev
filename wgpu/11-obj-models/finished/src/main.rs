@@ -1,5 +1,3 @@
-#![feature(slice_as_array)]
-
 use glfw::{fail_on_errors, Action, Key, WindowHint, ClientApiHint};
 mod renderer;
 use renderer::renderer::State;

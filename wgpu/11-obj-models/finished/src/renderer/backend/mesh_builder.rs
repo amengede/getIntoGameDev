@@ -331,7 +331,7 @@ impl ObjLoader {
 
     fn read_vertex(&mut self, bundle: String) {
 
-        /*
+        
         // This fails for some reason
         if !self.history.contains_key(&bundle) {
             self.history.insert(bundle.clone(), self.vertex_data.len() as u32);
@@ -346,21 +346,6 @@ impl ObjLoader {
                 normal: self.vn[k]});
         }
         self.index_data.push(self.history[&bundle]);
-        self.current_submesh.index_count = self.current_submesh.index_count + 1;
-        */
-
-        // Temporary fix
-        let v_vt_vn = split(bundle.as_str(), "/");
-        let i: usize = v_vt_vn[0].parse::<usize>().unwrap() - 1;
-        let j: usize = v_vt_vn[1].parse::<usize>().unwrap() - 1;
-        let k: usize = v_vt_vn[2].parse::<usize>().unwrap() - 1;
-
-        self.index_data.push(self.vertex_data.len() as u32);
-
-        self.vertex_data.push(ModelVertex {
-            position: self.v[i], 
-            tex_coord: self.vt[j], 
-            normal: self.vn[k]});
         self.current_submesh.index_count = self.current_submesh.index_count + 1;
     }
 
