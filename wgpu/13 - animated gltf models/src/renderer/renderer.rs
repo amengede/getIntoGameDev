@@ -63,6 +63,7 @@ impl<'a> State<'a> {
             memory_hints: wgpu::MemoryHints::Performance,
             label: Some("Device"),
             trace: wgpu::Trace::Off,
+            experimental_features: wgpu::ExperimentalFeatures::disabled()
         };
         let (device, queue) = adapter
             .request_device(&device_descriptor)
@@ -403,14 +404,18 @@ impl<'a> State<'a> {
         characters: &Vec<Character>,
         camera: &Camera) -> Result<(), wgpu::SurfaceError>{
 
-        self.device.poll(wgpu::MaintainBase::Wait).ok();
+        self.device.poll(wgpu::PollType::Wait{
+            submission_index: None, timeout: None
+        }).ok();
 
         // Upload
         self.update_projection(camera);
         self.update_transforms(quads, tris, characters);
 
         let event = self.queue.submit([]);
-        let maintain = wgpu::MaintainBase::WaitForSubmissionIndex(event);
+        let maintain = wgpu::PollType::Wait{
+            submission_index: Some(event), timeout: None
+        };
         self.device.poll(maintain).ok();
 
         let drawable = self.surface.get_current_texture()?;
@@ -434,6 +439,7 @@ impl<'a> State<'a> {
                 }),
                 store: wgpu::StoreOp::Store,
             },
+            depth_slice: None
         };
 
         let depth_stencil_attachment = wgpu::RenderPassDepthStencilAttachment {
@@ -493,7 +499,9 @@ impl<'a> State<'a> {
             self.render_skeletal_model(&self.skeletal_model.as_ref().unwrap(), &mut renderpass);
         }
         self.queue.submit(std::iter::once(command_encoder.finish()));
-        self.device.poll(wgpu::MaintainBase::wait()).ok();
+        self.device.poll(wgpu::PollType::Wait{
+            submission_index: None, timeout: None
+        }).ok();
 
         drawable.present();
 

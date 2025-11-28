@@ -6,11 +6,11 @@ edition = "2024"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-glfw = "0.59.0"
-wgpu = "25.0.2"
+glfw = "0.60.0"
+wgpu = "27.0.1"
 pollster = "0.4.0"
 glm = "0.3.0"
-serde_json = "1.0"
+serde_json = "1.0.145"
 [dependencies.image]
-version = "0.25.6"
+version = "0.25.9"
 features = ["png", "jpeg"]
