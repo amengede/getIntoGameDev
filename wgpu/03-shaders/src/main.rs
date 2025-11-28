@@ -22,7 +22,7 @@ impl<'a> State<'a> {
         let instance_descriptor = wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(), ..Default::default()
         };
-        let instance = wgpu::Instance::new(instance_descriptor);
+        let instance = wgpu::Instance::new(&instance_descriptor);
         let surface = instance.create_surface(window.render_context()).unwrap();
 
         let adapter_descriptor = wgpu::RequestAdapterOptionsBase {
@@ -37,9 +37,12 @@ impl<'a> State<'a> {
             required_features: wgpu::Features::empty(),
             required_limits: wgpu::Limits::default(),
             label: Some("Device"),
+            experimental_features: wgpu::ExperimentalFeatures::disabled(),
+            memory_hints: wgpu::MemoryHints::Performance,
+            trace: wgpu::Trace::Off
         };
         let (device, queue) = adapter
-            .request_device(&device_descriptor, None)
+            .request_device(&device_descriptor)
             .await.unwrap();
 
 
@@ -116,6 +119,7 @@ impl<'a> State<'a> {
                 }),
                 store: wgpu::StoreOp::Store,
             },
+            depth_slice: None
         };
 
         let render_pass_descriptor = wgpu::RenderPassDescriptor {

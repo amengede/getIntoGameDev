@@ -62,10 +62,13 @@ impl PipelineBuilder {
             label: Some("Render Pipeline"),
             layout: Some(&pipeline_layout),
 
+            cache: None,
+
             vertex: wgpu::VertexState {
                 module: &shader_module,
-                entry_point: &self.vertex_entry,
+                entry_point: Some(&self.vertex_entry),
                 buffers: &[],
+                compilation_options: wgpu::PipelineCompilationOptions::default()
             },
 
             primitive: wgpu::PrimitiveState {
@@ -80,8 +83,9 @@ impl PipelineBuilder {
 
             fragment: Some(wgpu::FragmentState {
                 module: &shader_module,
-                entry_point: &self.fragment_entry,
+                entry_point: Some(&self.fragment_entry),
                 targets: &render_targets,
+                compilation_options: wgpu::PipelineCompilationOptions::default()
             }),
 
             depth_stencil: None,
