@@ -52,7 +52,7 @@ impl<'a> State<'a> {
         let instance_descriptor = wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(), ..Default::default()
         };
-        let instance = wgpu::Instance::new(instance_descriptor);
+        let instance = wgpu::Instance::new(&instance_descriptor);
         let surface = instance.create_surface(window.render_context()).unwrap();
 
         let adapter_descriptor = wgpu::RequestAdapterOptionsBase {
@@ -68,9 +68,11 @@ impl<'a> State<'a> {
             required_limits: wgpu::Limits::default(),
             memory_hints: wgpu::MemoryHints::Performance,
             label: Some("Device"),
+            experimental_features: wgpu::ExperimentalFeatures::disabled(),
+            trace: wgpu::Trace::Off
         };
         let (device, queue) = adapter
-            .request_device(&device_descriptor, None)
+            .request_device(&device_descriptor)
             .await.unwrap();
 
 
@@ -169,7 +171,8 @@ impl<'a> State<'a> {
 
     fn render(&mut self, quads: &Vec<Object>, tris: &Vec<Object>) -> Result<(), wgpu::SurfaceError>{
 
-        self.device.poll(wgpu::Maintain::wait());
+        let _ = self.device.poll(
+            wgpu::PollType::Wait { submission_index: None, timeout: None });
 
         // Upload
         let mut offset: u64 = 0;
@@ -201,8 +204,9 @@ impl<'a> State<'a> {
         }
 
         let event = self.queue.submit([]);
-        let maintain = wgpu::Maintain::WaitForSubmissionIndex(event);
-        self.device.poll(maintain);
+        let maintain = wgpu::PollType::Wait {
+            submission_index: Some(event), timeout: None};
+        let _ = self.device.poll(maintain);
 
         let drawable = self.surface.get_current_texture()?;
         let image_view_descriptor = wgpu::TextureViewDescriptor::default();
@@ -225,6 +229,7 @@ impl<'a> State<'a> {
                 }),
                 store: wgpu::StoreOp::Store,
             },
+            depth_slice: None,
         };
 
         let render_pass_descriptor = wgpu::RenderPassDescriptor {
@@ -267,7 +272,8 @@ impl<'a> State<'a> {
             }
         }
         self.queue.submit(std::iter::once(command_encoder.finish()));
-        self.device.poll(wgpu::Maintain::wait());
+        let _ = self.device.poll(
+            wgpu::PollType::Wait { submission_index: None, timeout: None });
 
         drawable.present();
 
