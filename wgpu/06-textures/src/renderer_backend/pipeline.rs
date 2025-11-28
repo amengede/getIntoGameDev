@@ -80,11 +80,13 @@ impl<'a> Builder<'a> {
         let render_pipeline_descriptor = wgpu::RenderPipelineDescriptor {
             label: Some(label),
             layout: Some(&pipeline_layout),
+            cache: None,
 
             vertex: wgpu::VertexState {
                 module: &shader_module,
-                entry_point: &self.vertex_entry,
+                entry_point: Some(&self.vertex_entry),
                 buffers: &self.vertex_buffer_layouts,
+                compilation_options: wgpu::PipelineCompilationOptions::default()
             },
 
             primitive: wgpu::PrimitiveState {
@@ -99,8 +101,9 @@ impl<'a> Builder<'a> {
 
             fragment: Some(wgpu::FragmentState {
                 module: &shader_module,
-                entry_point: &self.fragment_entry,
+                entry_point: Some(&self.fragment_entry),
                 targets: &render_targets,
+                compilation_options: wgpu::PipelineCompilationOptions::default()
             }),
 
             depth_stencil: None,
