@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-glfw = "*"
-wgpu = "*"
-pollster = "*"
-glm = "*"
+glfw = "0.60.0"
+wgpu = "27.0.1"
+pollster = "0.4.0"
+glm = "0.3.0"
