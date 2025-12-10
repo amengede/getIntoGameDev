@@ -2,7 +2,8 @@ use glfw::{Action, ClientApiHint, Key, PWindow, WindowHint, fail_on_errors};
 mod renderer;
 use renderer::renderer::State;
 mod model;
-use model::{world::World, game_objects::Object};
+use model::{world::World, game_objects::Object, common::ObjectType, character::Character};
+use glm::vec3;
 mod utility;
 
 async fn setup_renderer(window: &mut PWindow) -> State<'_> {
@@ -27,22 +28,21 @@ fn main() {
 
     // Build world
     let mut world = World::new();
-    world.tris.push(Object {
+    world.objects.push(Object {
         position: glm::Vec3::new(0.0, 0.0, -1.0),
         angle: 0.0,
-        attachment: None
+        object_type: ObjectType::Poses
     });
-    world.quads.push(Object {
-        position: glm::Vec3::new(0.5, 0.0, -1.5),
-        angle: 0.0,
-        attachment: None
-    });
-    world.guns.push(Object {
-        position: glm::Vec3::new(0.0, 0.0, 0.0),
-        angle: 0.0,
-        attachment: Some(String::from("mixamorig:RightHand"))
-    });
-    state.build_ubos_for_objects(4);
+    let mut test_character = Character::new(
+            "modern_girl.gltf", 
+            vec3(0.0, 4.0, -1.5),
+            vec3(180.0, 0.0, 180.0),
+            2.0, ObjectType::Girl);
+    test_character.add_attachment(
+        String::from("mixamorig:RightHand"), 
+        ObjectType::Gun);
+    world.characters.push(test_character);
+    state.build_ubos_for_objects(3, 1);
     let mut frametime: f32 = 0.0;
 
     while !state.window.should_close() {
@@ -83,7 +83,7 @@ fn main() {
             }
         }
 
-        match state.render(&world.quads, &world.tris, &world.guns, &world.characters, &world.camera) {
+        match state.render(&world.objects, &world.characters, &world.camera) {
             Ok(_) => {},
             Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
                 state.update_surface();

@@ -1,9 +1,11 @@
 use glm::{Vec3, min, max, cross, normalize, radians, cos, sin};
 
+use crate::model::common::ObjectType;
+
 pub struct Object {
     pub position: Vec3,
     pub angle: f32,
-    pub attachment: Option<String>
+    pub object_type: ObjectType
 }
 
 pub struct Camera {

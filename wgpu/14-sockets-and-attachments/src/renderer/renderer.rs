@@ -8,11 +8,23 @@ use crate::renderer::backend::{
     ubo::{UBOGroup, UBO}};
 use crate::model::game_objects::{Camera, Object};
 use glm::{ext, dot, radians};
-use crate::renderer::backend::definitions::{Vertex, Mesh, Model};
+use crate::renderer::backend::definitions::{Vertex, Model};
 use std::collections::HashMap;
 use crate::utility::math::{from_translation, x_axis_rotation, y_axis_rotation, z_axis_rotation};
 
 use super::backend::definitions::{ModelVertex, BindScope, PipelineType, Material};
+use crate::model::common::ObjectType;
+
+struct DrawCommand {
+    object_type: ObjectType,
+    object_index: usize
+}
+
+struct SkeletalDrawCommand {
+    object_type: ObjectType,
+    object_index: usize,
+    skeleton_index: usize
+}
 
 pub struct State<'a> {
     instance: wgpu::Instance,
@@ -23,18 +35,16 @@ pub struct State<'a> {
     pub size: (i32, i32),
     pub window: &'a mut Window,
     render_pipelines: HashMap<PipelineType, wgpu::RenderPipeline>,
-    triangle_mesh: wgpu::Buffer,
-    quad_mesh: Mesh,
-    triangle_material: wgpu::BindGroup,
-    quad_material: wgpu::BindGroup,
     ubo: Option<UBOGroup>,
-    bone_ubo: Option<UBO>,
+    bone_ubos: Vec<UBO>,
     projection_ubo: UBO,
     bind_group_layouts: HashMap<BindScope, wgpu::BindGroupLayout>,
-    models: Vec<Model>,
-    skeletal_model: Option<SkeletalModel>,
+    models: HashMap<ObjectType, Model>,
+    skeletal_models: HashMap<ObjectType, SkeletalModel>,
     materials: Vec<Material>,
     depth_buffer: Texture,
+    static_draw_commands: Vec<DrawCommand>,
+    animated_draw_commands: Vec<SkeletalDrawCommand>
 }
 
 impl<'a> State<'a> {
@@ -89,24 +99,11 @@ impl<'a> State<'a> {
         };
         surface.configure(&device, &config);
 
-        let triangle_buffer = mesh_builder::make_triangle(&device);
-
-        let quad_mesh = mesh_builder::make_quad(&device);
-
         let bind_group_layouts = 
             Self::build_bind_group_layouts(&device);
 
         let render_pipelines = 
             Self::build_pipelines(&device, &config, &bind_group_layouts);
-
-        let triangle_material = new_texture(
-            "../img/winry.jpg", &device, &queue, 
-            "Triangle Material", 
-            &bind_group_layouts[&BindScope::Texture]);
-        let quad_material = new_texture(
-            "../img/satin.jpg", &device, &queue, 
-            "Quad Material", 
-            &bind_group_layouts[&BindScope::Texture]);
 
         let projection_ubo = UBO::new(
             &device, 
@@ -126,18 +123,16 @@ impl<'a> State<'a> {
             config,
             size,
             render_pipelines,
-            triangle_mesh: triangle_buffer,
-            quad_mesh,
-            triangle_material: triangle_material,
-            quad_material: quad_material,
             ubo: None,
             projection_ubo: projection_ubo,
             bind_group_layouts: bind_group_layouts,
-            models: Vec::new(),
+            models: HashMap::new(),
             materials: Vec::new(),
             depth_buffer,
-            skeletal_model: None,
-            bone_ubo: None,
+            skeletal_models: HashMap::new(),
+            bone_ubos: Vec::new(),
+            static_draw_commands: Vec::new(),
+            animated_draw_commands: Vec::new()
         }
     }
 
@@ -238,10 +233,12 @@ impl<'a> State<'a> {
         let c3 = glm::Vec4::new(0.0, 0.0, 0.0, 1.0);
         let pre_transform = glm::Matrix4::new(c0, c1, c2, c3);
 
-        self.models.push(loader.load("poses.obj",
-            &mut self.materials,
-            &self.device,
-            &pre_transform));
+        self.models.insert(
+            ObjectType::Poses, 
+            loader.load("poses.obj",
+                &mut self.materials,
+                &self.device,
+                &pre_transform));
         
         let c0 = glm::Vec4::new(0.05, 0.0, 0.0, 0.0);
         let c1 = glm::Vec4::new(0.0, 0.05, 0.0, 0.0);
@@ -254,10 +251,12 @@ impl<'a> State<'a> {
                                             * x_axis_rotation(-90.0)
                                             * glm::Matrix4::new(c0, c1, c2, c3);
 
-        self.models.push(loader.load("gun.obj",
-            &mut self.materials,
-            &self.device,
-            &pre_transform));
+        self.models.insert(
+            ObjectType::Gun,
+            loader.load("gun.obj",
+                &mut self.materials,
+                &self.device,
+                &pre_transform));
 
         for material in &mut self.materials {
 
@@ -286,15 +285,18 @@ impl<'a> State<'a> {
             }
         }
 
-        self.skeletal_model = Some(mesh_builder::load_from_gltf(
-            "modern_girl.gltf", &self.device));
-        let filename = String::from(self.skeletal_model.as_ref().unwrap()
-                                .material_filename.as_ref().unwrap());
+        let mut skeletal_model = mesh_builder::load_from_gltf(
+            "modern_girl.gltf", &self.device);
+        let filename = String::from(skeletal_model
+                                                .material_filename
+                                                .as_ref()
+                                                .unwrap());
         let filename: String = "../img/".to_owned() + &filename + "_diffuse.png";
-        self.skeletal_model.as_mut().unwrap().material = Some(new_texture(
+        skeletal_model.material = Some(new_texture(
             filename.as_str(), &self.device, &self.queue, 
             "Modern Girl diffuse", 
             &self.bind_group_layouts[&BindScope::Texture]));
+        self.skeletal_models.insert(ObjectType::Girl, skeletal_model);
     }
     
     pub fn resize(&mut self, new_size: (i32, i32)) {
@@ -314,14 +316,19 @@ impl<'a> State<'a> {
         self.surface = self.instance.create_surface(self.window.render_context()).unwrap();
     }
 
-    pub fn build_ubos_for_objects(&mut self, object_count: usize) {
+    pub fn build_ubos_for_objects(&mut self,
+        object_count: usize,
+        character_count: usize) {
 
         self.ubo = Some(UBOGroup::new(&self.device, object_count, 
             &self.bind_group_layouts[&BindScope::UBO]));
         
-        self.bone_ubo = Some(UBO::new(&self.device, 
+        self.bone_ubos.reserve(character_count);
+        for _ in 0..character_count {
+            self.bone_ubos.push(UBO::new(&self.device, 
             &self.bind_group_layouts[&BindScope::UBO], 
             128 * std::mem::size_of::<glm::Mat4>() as u64, "Bone UBO"));
+        }
     }
 
     fn update_projection(&mut self, camera: &Camera) {
@@ -345,44 +352,64 @@ impl<'a> State<'a> {
         self.projection_ubo.upload(&view_proj, &self.queue);
     }
 
-    fn update_transforms(&mut self, quads: &Vec<Object>, tris: &Vec<Object>,
-                        guns: &Vec<Object>,
-                        characters: &Vec<Character>) {
-        let mut offset: u64 = 0;
-        for i in 0..quads.len() {
-            let matrix = z_axis_rotation(quads[i].angle)
-                * from_translation(&quads[i].position);
-            self.ubo.as_mut().unwrap().upload(offset + i as u64, &matrix, &self.queue);
+    fn record_draw_commands(&mut self, static_models: &Vec<Object>,
+        animated_models: &Vec<Character>) {
+        
+        // reset drawing stuff
+        self.static_draw_commands.clear();
+        self.animated_draw_commands.clear();
+        let mut object_offset: u64 = 0;
+        let mut skeleton_offset: usize = 0;
+
+        // static models
+        for model in static_models {
+            let matrix = z_axis_rotation(model.angle)
+                * from_translation(&model.position);
+            self.ubo.as_mut().unwrap().upload(object_offset, &matrix, &self.queue);
+            self.static_draw_commands.push(DrawCommand {
+                object_type: model.object_type,
+                object_index: object_offset as usize });
+            object_offset += 1;
         }
 
-        offset += quads.len() as u64;
-        for i in 0..tris.len() {
-            let matrix = z_axis_rotation(tris[i].angle)
-                * from_translation(&tris[i].position);
-            self.ubo.as_mut().unwrap().upload(offset + i as u64, &matrix, &self.queue);
+        // attachments
+        for model in animated_models {
+            let character_matrix = model.transform_component.get_transform();
+
+            let skeleton = &model.skeleton_component;
+            for attachment in &model.attachments {
+                let socket_matrix = skeleton.sockets.get(attachment.0).unwrap().clone();
+                let attachment_matrix = character_matrix * socket_matrix;
+                self.ubo.as_mut().unwrap().upload(object_offset, &attachment_matrix, &self.queue);
+                self.static_draw_commands.push(DrawCommand {
+                    object_type: *attachment.1,
+                    object_index: object_offset as usize });
+                object_offset += 1;
+            }
         }
-        offset += tris.len() as u64;
 
-        // upload to skeleton
-        for i in 0..characters.len() {
-            let character = &characters[i];
-            let matrix = character.transform_component.get_transform();
-            self.ubo.as_mut().unwrap().upload(offset + i as u64, &matrix, &self.queue);
+        // animated models
+        for model in animated_models {
+            let character_matrix = model.transform_component.get_transform();
+            self.ubo.as_mut().unwrap().upload(object_offset, &character_matrix, &self.queue);
 
-            let matrices = &character.skeleton_component.transforms;
-            self.bone_ubo.as_mut().unwrap().upload_vec(&matrices, &self.queue);
+            let skeleton = &model.skeleton_component;
+            let matrices = &skeleton.transforms;
+            self.bone_ubos[skeleton_offset].upload_vec(&matrices, &self.queue);
+            
+
+            self.animated_draw_commands.push(SkeletalDrawCommand {
+                object_type: model.object_type,
+                object_index: object_offset as usize,
+                skeleton_index: skeleton_offset });
+            object_offset += 1;
+            skeleton_offset += 1;
         }
-        offset += characters.len() as u64;
-
-        // gun
-        let skeleton = &characters[0].skeleton_component;
-        let attachment = guns[0].attachment.clone().unwrap();
-        let socket = skeleton.sockets.get(&attachment).unwrap().clone();
-        let matrix = characters[0].transform_component.get_transform() * socket;
-        self.ubo.as_mut().unwrap().upload(offset as u64, &matrix, &self.queue);
     }
 
-    fn render_model(&self, model: &Model, object_index: usize, renderpass: &mut wgpu::RenderPass) {
+    fn render_model(& self, command: &DrawCommand, renderpass: &mut wgpu::RenderPass) {
+
+        let model = self.models.get(&command.object_type).unwrap();
 
         // Bind vertex and index buffer
         renderpass.set_vertex_buffer(0, 
@@ -393,7 +420,7 @@ impl<'a> State<'a> {
         // Transforms
         renderpass.set_bind_group(
             1, 
-            &(self.ubo.as_ref().unwrap()).bind_groups[object_index], 
+            &(self.ubo.as_ref().unwrap()).bind_groups[command.object_index], 
             &[]);
         
         for submesh in &model.submeshes {
@@ -408,8 +435,10 @@ impl<'a> State<'a> {
         }
     }
 
-    fn render_skeletal_model(&self, model: &SkeletalModel, renderpass: &mut wgpu::RenderPass) {
+    fn render_skeletal_model(& self, command: &SkeletalDrawCommand,
+        renderpass: &mut wgpu::RenderPass) {
 
+        let model = self.skeletal_models.get(&command.object_type).unwrap();
         // Bind vertex and index buffer
         renderpass.set_vertex_buffer(0, 
             model.buffer.as_ref().unwrap().slice(0..model.ebo_offset));
@@ -419,9 +448,9 @@ impl<'a> State<'a> {
         // Transforms
         renderpass.set_bind_group(
             1, 
-            &(self.ubo.as_ref().unwrap()).bind_groups[2], 
+            &(self.ubo.as_ref().unwrap()).bind_groups[command.object_index], 
             &[]);
-        renderpass.set_bind_group(3, &(self.bone_ubo.as_ref().unwrap().bind_group), &[]);
+        renderpass.set_bind_group(3, &(self.bone_ubos[command.skeleton_index].bind_group), &[]);
 
         // Select pipeline
         let material = model.material.as_ref().unwrap();
@@ -431,17 +460,15 @@ impl<'a> State<'a> {
         renderpass.draw_indexed(0..model.index_count, 0, 0..1);
     }
 
-    pub fn render(&mut self, quads: &Vec<Object>, 
-        tris: &Vec<Object>,
-        guns: &Vec<Object>,
-        characters: &Vec<Character>,
+    pub fn render(&mut self, static_models: &Vec<Object>,
+        animated_models: &Vec<Character>,
         camera: &Camera) -> Result<(), wgpu::SurfaceError>{
 
         self.device.poll(wgpu::MaintainBase::Wait).ok();
 
         // Upload
         self.update_projection(camera);
-        self.update_transforms(quads, tris, guns, characters);
+        self.record_draw_commands(static_models, animated_models);
 
         let event = self.queue.submit([]);
         let maintain = wgpu::MaintainBase::WaitForSubmissionIndex(event);
@@ -491,43 +518,16 @@ impl<'a> State<'a> {
             let mut renderpass = command_encoder.begin_render_pass(&render_pass_descriptor);
             renderpass.set_pipeline(&self.render_pipelines[&PipelineType::Simple]);
 
-            // Quads
-            renderpass.set_bind_group(0, &self.quad_material, &[]);
             renderpass.set_bind_group(2, &self.projection_ubo.bind_group, &[]);
-            renderpass.set_vertex_buffer(0, 
-                self.quad_mesh.buffer.slice(0..self.quad_mesh.offset));
-            renderpass.set_index_buffer(self.quad_mesh.buffer.slice(self.quad_mesh.offset..), 
-                wgpu::IndexFormat::Uint16);
-            let mut offset: usize = 0;
-            for i in 0..quads.len() {
-                renderpass.set_bind_group(
-                    1, 
-                    &(self.ubo.as_ref().unwrap()).bind_groups[offset + i], 
-                    &[]);
-                renderpass.draw_indexed(0..6, 0, 0..1);
+
+            for command in &self.static_draw_commands {
+                self.render_model(command, &mut renderpass);
             }
 
-            // Triangles
-            renderpass.set_bind_group(0, &self.triangle_material, &[]);
-            renderpass.set_vertex_buffer(0, self.triangle_mesh.slice(..));
-            offset = quads.len();
-            for i in 0..tris.len() {
-                renderpass.set_bind_group(
-                    1, 
-                    &(self.ubo.as_ref().unwrap()).bind_groups[offset + i], 
-                    &[]);
-                renderpass.draw(0..3, 0..1);
-            }
-
-            // Model
-            self.render_model(&self.models[0], 0, &mut renderpass);
-
-            // Skeletal model
             renderpass.set_pipeline(&self.render_pipelines[&PipelineType::SkeletalModel]);
-            self.render_skeletal_model(&self.skeletal_model.as_ref().unwrap(), &mut renderpass);
-
-            // Gun
-            self.render_model(&self.models[1], 3, &mut renderpass);
+            for command in &self.animated_draw_commands {
+                self.render_skeletal_model(command, &mut renderpass);
+            }
         }
         self.queue.submit(std::iter::once(command_encoder.finish()));
         self.device.poll(wgpu::MaintainBase::wait()).ok();

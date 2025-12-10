@@ -1,14 +1,11 @@
 use std::collections::HashMap;
 use glfw::Window;
-use glm::vec3;
 use crate::model::{animation::AnimationComponent, game_objects::{Camera, Object}};
 use super::animation::load_animations_from_gltf;
 use super::character::Character;
 
 pub struct World {
-    pub quads: Vec<Object>,
-    pub tris: Vec<Object>,
-    pub guns: Vec<Object>,
+    pub objects: Vec<Object>,
     pub characters: Vec<Character>,
     pub camera: Camera,
     pub keys: HashMap<glfw::Key, bool>,
@@ -21,9 +18,7 @@ impl World {
         let animations = load_animations_from_gltf("modern_girl.gltf");
 
         let mut world = World { 
-            quads: Vec::new(), 
-            tris: Vec::new(),
-            guns: Vec::new(),
+            objects: Vec::new(),
             characters: Vec::new(),
             camera: Camera::new(),
             keys: HashMap::new(),
@@ -34,13 +29,6 @@ impl World {
         world.keys.insert(glfw::Key::S, false);
         world.keys.insert(glfw::Key::D, false);
 
-        let test_character = Character::new(
-            "modern_girl.gltf", 
-            vec3(0.0, 4.0, -1.5),
-            vec3(180.0, 0.0, 180.0),
-            2.0);
-        world.characters.push(test_character);
-
         world
     }
 
@@ -49,13 +37,6 @@ impl World {
     }
 
     pub fn update(&mut self, dt: f32, window: &mut Window) {
-
-        for i in 0..self.tris.len() {
-            self.tris[i].angle = self.tris[i].angle + 0.001 * dt;
-            if self.tris[i].angle > 360.0 {
-                self.tris[i].angle -= 360.0;
-            }
-        }
 
         for character in &mut self.characters {
             character.update(dt, &self.animations);

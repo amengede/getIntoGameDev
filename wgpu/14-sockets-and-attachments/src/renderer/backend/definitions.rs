@@ -97,11 +97,6 @@ impl ModelVertex {
     }
 }
 
-pub struct Mesh {
-    pub buffer: wgpu::Buffer,
-    pub offset: u64,
-}
-
 #[repr(C)] // C-style data layout
 pub struct SkeletalVertex {
     pub position: Vec3,

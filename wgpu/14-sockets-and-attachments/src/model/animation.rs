@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::model::definitions;
+use crate::model::common::ObjectType;
 use crate::utility::file;
 use crate::utility::math;
 
@@ -67,7 +68,7 @@ pub fn load_animations_from_gltf(filename: &str) -> HashMap<u8, AnimationCompone
     let accessor_descriptors = data["accessors"].as_array().unwrap();
     let buffer_views = data["bufferViews"].as_array().unwrap();
     let skin_descriptor = &data["skins"][0];
-    let animation_codes = &definitions::get_animation_lookup()[&definitions::OBJECT_TYPE_GIRL];
+    let animation_codes = &definitions::get_animation_lookup()[&ObjectType::Girl];
     let joint_indices = skin_descriptor["joints"].as_array().unwrap();
 
     let buffer_descriptor = &data["buffers"][0];
