@@ -72,9 +72,11 @@ impl<'a> State<'a> {
         let adapter = instance.request_adapter(&adapter_descriptor)
             .await.unwrap();
 
+        let mut limits = wgpu::Limits::default();
+        limits.max_bind_groups = 8;
         let device_descriptor = wgpu::DeviceDescriptor {
             required_features: wgpu::Features::empty(),
-            required_limits: wgpu::Limits::default(),
+            required_limits: limits,
             memory_hints: wgpu::MemoryHints::Performance,
             label: Some("Device"),
             trace: wgpu::Trace::Off,
@@ -119,7 +121,7 @@ impl<'a> State<'a> {
 
         let buffer_descriptor = wgpu::BufferDescriptor {
             label: Some("Camera buffer descriptor"),
-            size: 48,
+            size: 64,
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::UNIFORM,
             mapped_at_creation: false
         };
@@ -209,6 +211,7 @@ impl<'a> State<'a> {
         builder.add_bind_group_layout(&bind_group_layouts[&BindScope::Color]);
         builder.add_bind_group_layout(&bind_group_layouts[&BindScope::UBO]);
         builder.add_bind_group_layout(&bind_group_layouts[&BindScope::UBO]);
+        builder.add_bind_group_layout(&bind_group_layouts[&BindScope::Skybox]); // skybox
         pipeline = builder.build("Colored Model Pipeline");
         pipelines.insert(pipeline_type, pipeline);
 
@@ -220,6 +223,7 @@ impl<'a> State<'a> {
         builder.add_bind_group_layout(&bind_group_layouts[&BindScope::Texture]);
         builder.add_bind_group_layout(&bind_group_layouts[&BindScope::UBO]);
         builder.add_bind_group_layout(&bind_group_layouts[&BindScope::UBO]);
+        builder.add_bind_group_layout(&bind_group_layouts[&BindScope::Skybox]); // skybox
         pipeline = builder.build("Textured Model Pipeline");
         pipelines.insert(pipeline_type, pipeline);
 
@@ -232,6 +236,7 @@ impl<'a> State<'a> {
         builder.add_bind_group_layout(&bind_group_layouts[&BindScope::UBO]); // model
         builder.add_bind_group_layout(&bind_group_layouts[&BindScope::UBO]); // viewProj
         builder.add_bind_group_layout(&bind_group_layouts[&BindScope::UBO]); // bone data
+        builder.add_bind_group_layout(&bind_group_layouts[&BindScope::Skybox]); // skybox
         pipeline = builder.build("Skeletal Model Pipeline");
         pipelines.insert(pipeline_type, pipeline);
 
@@ -450,6 +455,7 @@ impl<'a> State<'a> {
         // record camera data
         {
             let offset = 0;
+            let pos = camera.position.extend(0.0);
             let forwards = camera.forwards.extend(0.0);
             let aspect: f32 = 3.0/4.0;
             let fov: f32 = glm::tan(glm::radians(45.0));
@@ -457,6 +463,7 @@ impl<'a> State<'a> {
             let up = camera.up.extend(0.0) * aspect * fov;
 
             let blob: &[u8] = &[
+                unsafe { any_as_u8_slice(&pos) },
                 unsafe { any_as_u8_slice(&forwards) },
                 unsafe { any_as_u8_slice(&right) },
                 unsafe { any_as_u8_slice(&up) }].concat();
@@ -577,12 +584,13 @@ impl<'a> State<'a> {
             renderpass.set_pipeline(&self.render_pipelines[&PipelineType::Simple]);
 
             renderpass.set_bind_group(2, &self.projection_ubo.bind_group, &[]);
-
+            renderpass.set_bind_group(3, &self.skybox, &[]);
             for command in &self.static_draw_commands {
                 self.render_model(command, &mut renderpass);
             }
 
             renderpass.set_pipeline(&self.render_pipelines[&PipelineType::SkeletalModel]);
+            renderpass.set_bind_group(4, &self.skybox, &[]);
             for command in &self.animated_draw_commands {
                 self.render_skeletal_model(command, &mut renderpass);
             }

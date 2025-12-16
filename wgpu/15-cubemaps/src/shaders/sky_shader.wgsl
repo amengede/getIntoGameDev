@@ -1,7 +1,8 @@
 struct Camera {
-   forwards: vec3<f32>,
-   right: vec3<f32>,
-   up: vec3<f32> 
+    pos: vec3<f32>,
+    forwards: vec3<f32>,
+    right: vec3<f32>,
+    up: vec3<f32> 
 }
 
 @group(0) @binding(0) var<uniform> camera: Camera;
