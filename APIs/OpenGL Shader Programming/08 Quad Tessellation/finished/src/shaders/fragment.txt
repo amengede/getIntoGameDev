@@ -1,0 +1,25 @@
+#version 450 core
+
+noperspective in vec3 edgeDistance;
+in vec3 fragmentColor;
+
+uniform float lineWidth;
+
+out vec4 finalColor;
+
+float edgeMix()
+{
+
+    float d = min(edgeDistance.x, edgeDistance.y);
+    d = min(d, edgeDistance.z);
+
+    return smoothstep(lineWidth - 0.01, lineWidth + 0.01, d);
+}
+
+void main()
+{
+    float mixVal = edgeMix();
+
+    finalColor = mix(vec4(0.0), vec4(fragmentColor, 1.0), mixVal);
+
+}

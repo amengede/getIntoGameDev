@@ -1,0 +1,13 @@
+method      |   drawcalls   |   frametime (ms)
+----------------------------------------------
+naive               600             18.5
+
+backface            422             13.7
+
+culled planes       346             12
+
+pre-recorded        346             11
+
+view cull           286             9.5
+
+occlusion cull      0               0

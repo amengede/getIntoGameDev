@@ -1,0 +1,28 @@
+#version 430 core
+
+layout (location=0) in vec3 vertexPos;
+layout (location=2) in vec3 vertexTangent;
+layout (location=3) in vec3 vertexBitangent;
+layout (location=4) in vec3 vertexNormal;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+out vec3 fragmentPos;
+out vec2 fragmentTexCoord;
+out mat3 TBN;
+
+void main()
+{
+    gl_Position = projection * view * model * vec4(vertexPos, 1.0);
+
+    vec3 T = normalize(vertexTangent);
+    vec3 B = normalize(vertexBitangent);
+    vec3 N = normalize(vertexNormal);
+    // maps tangent space into world space
+    TBN = mat3(T, B, N);
+    
+    fragmentPos = vec3(model * vec4(vertexPos, 1.0));
+    fragmentTexCoord = vertexTexCoord;
+}

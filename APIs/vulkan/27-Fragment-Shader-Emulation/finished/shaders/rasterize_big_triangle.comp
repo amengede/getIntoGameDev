@@ -1,0 +1,60 @@
+#version 450
+
+struct Vertex {
+    vec2 position;
+    vec2 padding1;
+    vec3 color;
+    float padding2;
+};
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout (set = 0, binding = 0, rgba8) uniform image2D colorBuffer;
+layout (std140, set = 1, binding = 0) readonly buffer vertexBuffer {
+    Vertex vertices[];
+};
+
+vec3 get_barycentric_coordinate(vec2 a, vec2 b, vec2 c, vec2 p) {
+    
+    vec3 bc = cross(vec3(a.x - p.x, b.x - a.x, c.x - a.x), vec3(a.y - p.y, b.y - a.y, c.y - a.y));
+
+    if (abs(bc.x) < 1) {
+        return vec3(-1, 1, 1);
+    }
+
+    return vec3(1 - (bc.y + bc.z) / bc.x, bc.y / bc.x, bc.z / bc.x);
+}
+
+void main() {
+
+    ivec2 screen_pos = ivec2(gl_GlobalInvocationID.xy);
+    vec2 screen_size = 0.5 * vec2(imageSize(colorBuffer));
+    
+    int triangle_index = 0;
+
+    Vertex vertex_a = vertices[triangle_index];
+    Vertex vertex_b = vertices[triangle_index + 1];
+    Vertex vertex_c = vertices[triangle_index + 2];
+
+    vec2 pos_a = screen_size * (1 + vertex_a.position);
+    vec3 color_a = vertex_a.color;
+    vec2 pos_b = screen_size * (1 + vertex_b.position);
+    vec3 color_b = vertex_b.color;
+    vec2 pos_c = screen_size * (1 + vertex_c.position);
+    vec3 color_c = vertex_c.color;
+
+    // Offset to minimum triangle corner
+    screen_pos += ivec2(min(pos_a, min(pos_b, pos_c)));
+
+    if (screen_pos.x < 0 || screen_pos.x >= 2 * screen_size.x || screen_pos.y < 0 || screen_pos.y >= 2 * screen_size.y) {
+        return;
+    }
+
+    vec3 bc = get_barycentric_coordinate(pos_a, pos_b, pos_c, vec2(screen_pos));
+    if (bc.x < 0 || bc.y < 0 || bc.z < 0) {
+        return;
+    }
+
+    vec3 color = bc.x * color_a + bc.y * color_b + bc.z * color_c;
+        
+    imageStore(colorBuffer, screen_pos, vec4(color, 1.0));
+}

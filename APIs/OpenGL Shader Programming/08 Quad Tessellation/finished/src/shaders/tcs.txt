@@ -1,0 +1,27 @@
+#version 450 core
+
+layout (vertices = 4) out;
+
+in vec3 tcsColor[];
+
+uniform float outerSegs;
+uniform float innerSegs;
+
+out vec3 tesColor[];
+
+void main()
+{
+	
+	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+
+	tesColor[gl_InvocationID] = tcsColor[gl_InvocationID];
+
+	gl_TessLevelOuter[0] = outerSegs;
+	gl_TessLevelOuter[1] = outerSegs;
+	gl_TessLevelOuter[2] = outerSegs;
+	gl_TessLevelOuter[3] = outerSegs;
+
+	gl_TessLevelInner[0] = innerSegs;
+	gl_TessLevelInner[1] = innerSegs;
+
+}

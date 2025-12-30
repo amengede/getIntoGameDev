@@ -1,0 +1,53 @@
+# Blender 4.3.2 MTL File: 'None'
+# www.blender.org
+
+newmtl blinn6
+Ns 63.117920
+Ka 0.500000 0.500000 0.500000
+Kd 0.500000 0.500000 0.500000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+
+newmtl lambert1
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd ../img/Sakura_Cloth_BaseColor.png
+
+newmtl lambert14
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd ../img/Sakura_Hair_BaseColor.png
+map_Bump -bm 1.000000 D:/Unreal/2020/SakuraGirl/materials/Sakura_to_Hair_Normal.png
+
+newmtl lambert15
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.077000 0.353579 0.500000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+
+newmtl lambert8
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd ../img/Sakura_Body_BaseColor.png

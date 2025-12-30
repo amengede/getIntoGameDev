@@ -1,0 +1,28 @@
+#version 450
+#extension GL_EXT_shader_image_int64 : require
+#extension GL_KHR_memory_scope_semantics : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout (set = 0, binding = 0, r64ui) uniform u64image2D colorBuffer;
+layout (set = 1, binding = 0, rgba8) writeonly uniform image2D tempSurface;
+
+void main() {
+
+    ivec2 screen_pos = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 screen_size = imageSize(colorBuffer);
+
+    if (screen_pos.x < 0 || screen_pos.x >= screen_size.x || screen_pos.y < 0 || screen_pos.y >= screen_size.y) {
+        return;
+    }
+
+    uint depthClearValue = floatBitsToInt(1.0);
+
+    uint packedColor = uint(imageAtomicLoad(colorBuffer, screen_pos, gl_ScopeInvocation, gl_StorageSemanticsImage, gl_SemanticsRelaxed));
+    float r = float((packedColor & 0xff000000) >> 24);
+    float g = float((packedColor & 0x00ff0000) >> 16);
+    float b = float((packedColor & 0x0000ff00) >> 8);
+    float a = float((packedColor & 0x000000ff));
+    vec4 color = (1.0 / 255.0) * vec4(r, g, b, a);
+    imageStore(tempSurface, screen_pos, color);
+}

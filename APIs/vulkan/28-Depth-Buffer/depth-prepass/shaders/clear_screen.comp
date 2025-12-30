@@ -1,0 +1,31 @@
+#version 450
+#extension GL_EXT_shader_atomic_int64 : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout (set = 0, binding = 0, rgba8) writeonly uniform image2D colorBuffer;
+layout (set = 0, binding = 1) writeonly buffer depthBuffer {
+    uint64_t depth[];
+};
+
+void main() {
+
+    int index = int(gl_GlobalInvocationID.x);
+    ivec2 screen_size = imageSize(colorBuffer);
+    int x = index / screen_size.y;
+    int y = index - x * screen_size.y;
+
+    ivec2 screen_pos = ivec2(x, y);
+
+    if (screen_pos.x < 0 || screen_pos.x >= screen_size.x || screen_pos.y < 0 || screen_pos.y >= screen_size.y) {
+        return;
+    }
+
+    vec3 pixel_color = vec3(0.0, 0.0, 0.0);
+
+    imageStore(colorBuffer, screen_pos, vec4(pixel_color, 1.0));
+
+    uint depthClearValue = floatBitsToInt(1.0);
+
+    depth[index] = (uint64_t(depthClearValue) << 32) + 1;
+}

@@ -1,0 +1,70 @@
+#version 450
+#extension GL_EXT_shader_image_int64 : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+struct Vertex {
+    vec3 position;
+    float padding1;
+    vec3 color;
+    float padding2;
+};
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout (set = 0, binding = 0, r64ui) uniform u64image2D colorBuffer;
+layout (std140, set = 1, binding = 0) readonly buffer vertexBuffer {
+    Vertex vertices[];
+};
+
+vec3 get_barycentric_coordinate(vec2 a, vec2 b, vec2 c, vec2 p) {
+    
+    vec3 bc = cross(vec3(a.x - p.x, b.x - a.x, c.x - a.x), vec3(a.y - p.y, b.y - a.y, c.y - a.y));
+
+    if (abs(bc.x) < 1) {
+        return vec3(-1, 1, 1);
+    }
+
+    return vec3(1 - (bc.y + bc.z) / bc.x, bc.y / bc.x, bc.z / bc.x);
+}
+
+void main() {
+
+    ivec2 screen_pos = ivec2(gl_GlobalInvocationID.xy);
+    int screen_height = int(imageSize(colorBuffer).y);
+    vec2 screen_size = 0.5 * vec2(imageSize(colorBuffer));
+    
+    int triangle_index = 3 * 3;
+
+    Vertex vertex_a = vertices[triangle_index];
+    Vertex vertex_b = vertices[triangle_index + 1];
+    Vertex vertex_c = vertices[triangle_index + 2];
+
+    vec2 pos_a = screen_size * (1 + vertex_a.position.xy);
+    vec3 color_a = vertex_a.color;
+    float depth_a = vertex_a.position.z;
+    vec2 pos_b = screen_size * (1 + vertex_b.position.xy);
+    vec3 color_b = vertex_b.color;
+    float depth_b = vertex_b.position.z;
+    vec2 pos_c = screen_size * (1 + vertex_c.position.xy);
+    vec3 color_c = vertex_c.color;
+    float depth_c = vertex_c.position.z;
+
+    // Offset to minimum triangle corner
+    screen_pos += ivec2(min(pos_a, min(pos_b, pos_c)));
+
+    if (screen_pos.x < 0 || screen_pos.x >= 2 * screen_size.x || screen_pos.y < 0 || screen_pos.y >= 2 * screen_size.y) {
+        return;
+    }
+
+    vec3 bc = get_barycentric_coordinate(pos_a, pos_b, pos_c, vec2(screen_pos));
+    if (bc.x < 0 || bc.y < 0 || bc.z < 0) {
+        return;
+    }
+    
+    uint depth_value = floatBitsToInt(bc.x * depth_a + bc.y * depth_b + bc.z * depth_c);
+    uvec3 color = uvec3(255.0 * (bc.x * color_a + bc.y * color_b + bc.z * color_c));
+    uint64_t depthAndColor = (uint64_t(depth_value) << 32) 
+        | (color.r << 24) 
+        | (color.g << 16) 
+        | (color.b << 8) | (0);
+    imageAtomicMin(colorBuffer, screen_pos, depthAndColor);
+}

@@ -1,0 +1,18 @@
+[package]
+name = "teeko"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies.sdl2]
+default-features = false
+features = ["use_mac_framework", "image"]
+version = "*"
+
+[target.aarch64-apple-darwin]
+rustflags = [
+  "-C", "link-arg=-undefined",
+  "-C", "link-arg=dynamic_lookup",
+]

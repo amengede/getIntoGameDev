@@ -1,0 +1,1 @@
+#define SLANG_TAG_VERSION "2024.17-1-g839bc9aa"

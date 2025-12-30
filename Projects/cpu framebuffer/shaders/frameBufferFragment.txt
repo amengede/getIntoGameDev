@@ -1,0 +1,13 @@
+#version 330 core
+#extension GL_ARB_separate_shader_objects : enable
+
+layout (location=0) in vec2 fragmentTextureCoordinate;
+
+uniform sampler2D framebuffer;
+
+out vec4 finalColor;
+
+void main()
+{
+    finalColor = texture(framebuffer, fragmentTextureCoordinate);
+}

@@ -1,0 +1,180 @@
+#version 430
+
+struct Sphere {
+    vec3 center;
+    float radius;
+    vec3 color;
+};
+
+struct Camera {
+    vec3 position;
+    vec3 forwards;
+    vec3 right;
+    vec3 up;
+};
+
+struct Ray {
+    vec3 origin;
+    vec3 direction;
+};
+
+struct Plane {
+    vec3 center;
+    float uMin;
+    vec3 tangent;
+    float uMax;
+    vec3 bitangent;
+    float vMin;
+    vec3 normal;
+    float vMax;
+    vec3 color;
+};
+
+struct RenderState {
+    float t;
+    vec3 color;
+    vec3 position;
+    vec3 normal;
+    bool hit;
+};
+
+// input/output
+layout(local_size_x = 8, local_size_y = 8) in;
+layout(rgba32f, binding = 0) uniform image2D img_output;
+
+//Scene data
+uniform Camera viewer;
+layout(std430, binding = 1) buffer sphereData {
+    Sphere[] spheres;
+};
+layout(std430, binding = 2) buffer planeData {
+    Plane[] planes;
+};
+uniform ivec2 objectCounts;
+
+RenderState trace(Ray ray);
+
+void hit(Ray ray, Sphere sphere, float tMin, float tMax, inout RenderState renderstate);
+
+void hit(Ray ray, Plane plane, float tMin, float tMax, inout RenderState renderstate);
+
+void main() {
+
+    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 screen_size = imageSize(img_output);
+    float horizontalCoefficient = ((float(pixel_coords.x) * 2 - screen_size.x) / screen_size.x);
+    float verticalCoefficient = ((float(pixel_coords.y) * 2 - screen_size.y) / screen_size.x);
+
+    Ray ray;
+    ray.origin = viewer.position;
+    ray.direction = viewer.forwards + horizontalCoefficient * viewer.right + verticalCoefficient * viewer.up;
+
+    vec3 pixel = vec3(1.0);
+
+    for (int i = 0; i < 4; i++) {
+
+        RenderState renderState = trace(ray);
+
+        //early exit
+        if (!renderState.hit) {
+            break;
+        }
+        
+        //unpack color
+        pixel = pixel * renderState.color;
+
+        //set up ray for next trace
+        ray.origin = renderState.position;
+        ray.direction = reflect(ray.direction, renderState.normal);
+
+    }
+
+    imageStore(img_output, pixel_coords, vec4(pixel,1.0));
+}
+
+RenderState trace(Ray ray) {
+
+    RenderState renderState;
+    renderState.color = vec3(1.0);
+    bool hitSomething = false;
+    
+    float nearestHit = 999999999;
+    
+    for (int i = 0; i < objectCounts.x; i++) {
+
+        hit(ray, spheres[i], 0.001, nearestHit, renderState);
+
+        if (renderState.hit) {
+            hitSomething = true;
+            nearestHit = renderState.t;
+        }
+    }
+
+    for (int i = 0; i < objectCounts.y; i++) {
+    
+       hit(ray, planes[i], 0.001, nearestHit, renderState);
+       
+       if (renderState.hit) {
+            hitSomething = true;
+            nearestHit = renderState.t;
+        }
+    }
+
+    renderState.hit = hitSomething;
+        
+    return renderState;
+}
+
+void hit(Ray ray, Sphere sphere, float tMin, float tMax, inout RenderState renderState) {
+
+    vec3 co = ray.origin - sphere.center;
+    float a = dot(ray.direction, ray.direction);
+    float b = 2 * dot(ray.direction, co);
+    float c = dot(co, co) - sphere.radius * sphere.radius;
+    float discriminant = b * b - (4 * a * c);
+    
+    if (discriminant > 0.0) {
+
+        float t = (-b - sqrt(discriminant)) / (2 * a);
+
+        if (t > tMin && t < tMax) {
+
+            renderState.position = ray.origin + t * ray.direction;
+            renderState.normal = normalize(renderState.position - sphere.center);
+            renderState.t = t;
+            renderState.color = sphere.color;
+            renderState.hit = true;
+            return;
+        }
+    }
+    renderState.hit = false;
+}
+
+void hit(Ray ray, Plane plane, float tMin, float tMax, inout RenderState renderState) {
+    
+    float denom = dot(plane.normal, ray.direction); 
+    
+    if (denom < 0.000001) {
+
+        float t = dot(plane.center - ray.origin, plane.normal) / denom; 
+
+        if (t > tMin && t < tMax) {
+
+            vec3 testPoint = ray.origin + t * ray.direction;
+            vec3 testDirection = testPoint - plane.center;
+
+            float u = dot(testDirection, plane.tangent);
+            float v = dot(testDirection, plane.bitangent);
+
+            if (u > plane.uMin && u < plane.uMax && v > plane.vMin && v < plane.vMax) {
+                renderState.position = testPoint;
+                renderState.t = t;
+                renderState.color = plane.color;
+                renderState.normal = plane.normal;
+                renderState.hit = true;
+                return;
+            }
+        }
+    }
+    renderState.hit = false;
+}

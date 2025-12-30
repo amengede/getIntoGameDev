@@ -1,0 +1,49 @@
+#version 430 core
+
+in vec3 fragmentPos;
+in vec2 fragmentTexCoord;
+in mat3 TBN;
+
+uniform sampler2D megaTexture; //albedo, emissive, glossiness, normal, specular
+
+layout (location = 0) out vec4 g0;
+layout (location = 1) out vec4 g1;
+layout (location = 2) out vec4 g2;
+layout (location = 3) out vec4 g3;
+
+
+void main()
+{
+    //sample data
+    vec2 uv = fragmentTexCoord;
+    vec2 rightShift = vec2(0.2, 0.0);
+    vec3 albedo = texture(megaTexture, uv).rgb;
+    uv += rightShift;
+    vec3 emissive = texture(megaTexture, uv).rgb;
+    uv += rightShift;
+    float gloss = texture(megaTexture, uv).r;
+    uv += rightShift;
+    // 0 to 1
+    vec3 normal = texture(megaTexture, uv).rgb;
+    // -1 to 1
+    normal = 2.0 * normal - vec3(1.0);
+    // to model-space
+    normal = normalize(TBN * normal);
+    // 0 to 1
+    normal = (normal + vec3(1.0)) / 2.0;
+    uv += rightShift;
+    vec3 specular = texture(megaTexture, uv).rgb;
+
+    //write data
+    g0.xyz = albedo;
+    g0.w = emissive.r;
+
+    g1.xy = emissive.gb;
+    g1.zw = fragmentPos.xy;
+
+    g2.x = fragmentPos.z;
+    g2.yzw = normal;
+
+    g3.x = gloss;
+    
+}

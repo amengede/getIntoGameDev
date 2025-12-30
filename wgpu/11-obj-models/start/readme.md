@@ -1,0 +1,2 @@
+- renderer takes camera in update
+- renderer calculates view transform and builds viewproj

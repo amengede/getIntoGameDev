@@ -1,0 +1,96 @@
+#version 450
+#extension GL_EXT_shader_image_int64 : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+struct Vertex {
+    vec3 position;
+    float padding1;
+    vec3 color;
+    float padding2;
+};
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout (set = 0, binding = 0, r64ui) uniform u64image2D colorBuffer;
+layout (std140, set = 1, binding = 0) readonly buffer vertexBuffer {
+    Vertex vertices[];
+};
+layout (set = 1, binding = 1) uniform UBO {
+    mat4 proj;
+};
+
+vec3 get_barycentric_coordinate(vec3 a, vec3 b, vec3 c, vec2 p) {
+    
+    vec3 bc = cross(vec3(a.x - p.x, b.x - a.x, c.x - a.x), vec3(a.y - p.y, b.y - a.y, c.y - a.y));
+
+    if (abs(bc.x) < 1) {
+        return vec3(-1, 1, 1);
+    }
+
+    return vec3(1 - (bc.y + bc.z) / bc.x, bc.y / bc.x, bc.z / bc.x);
+}
+
+vec3 get_ndc_coordinate(vec3 world_pos) {
+
+    vec4 ndc_pos = proj * vec4(world_pos, 1.0);
+
+    //perspective division
+    return (1.0 / ndc_pos.w) * ndc_pos.xyz;
+}
+
+vec3 get_screen_coordinate(vec3 ndc_pos, vec2 screen_size) {
+
+    vec2 screen_pos = screen_size * (1 + ndc_pos.xy);
+
+    return vec3(screen_pos, ndc_pos.z);
+}
+
+void main() {
+
+    ivec2 screen_pos = ivec2(gl_GlobalInvocationID.xy);
+    int screen_height = int(imageSize(colorBuffer).y);
+    vec2 screen_size = 0.5 * vec2(imageSize(colorBuffer));
+    
+    int triangle_index = 3 * 3;
+
+    Vertex vertex_a = vertices[triangle_index];
+    Vertex vertex_b = vertices[triangle_index + 1];
+    Vertex vertex_c = vertices[triangle_index + 2];
+
+    vec3 pos_a = get_ndc_coordinate(vertex_a.position);
+    pos_a = get_screen_coordinate(pos_a, screen_size);
+    vec3 color_a = vertex_a.color;
+
+    vec3 pos_b = get_ndc_coordinate(vertex_b.position);
+    pos_b = get_screen_coordinate(pos_b, screen_size);
+    vec3 color_b = vertex_b.color;
+
+    vec3 pos_c = get_ndc_coordinate(vertex_c.position);
+    pos_c = get_screen_coordinate(pos_c, screen_size);
+    vec3 color_c = vertex_c.color;
+
+    // Offset to minimum triangle corner
+    screen_pos += ivec2(min(pos_a.xy, min(pos_b.xy, pos_c.xy)));
+
+    if (screen_pos.x < 0 || screen_pos.x >= 2 * screen_size.x || screen_pos.y < 0 || screen_pos.y >= 2 * screen_size.y) {
+        return;
+    }
+
+    vec3 bc = get_barycentric_coordinate(pos_a, pos_b, pos_c, vec2(screen_pos));
+    if (bc.x < 0 || bc.y < 0 || bc.z < 0) {
+        return;
+    }
+
+    float z = bc.x * pos_a.z + bc.y * pos_b.z + bc.z * pos_c.z;
+    if (z < 0.0 || z > 1.0) {
+        return;
+    }
+    uint depth_value = floatBitsToInt(z);
+
+    uvec3 color = uvec3(255.0 * (bc.x * color_a + bc.y * color_b + bc.z * color_c));
+    uint64_t depthAndColor = (uint64_t(depth_value) << 32) 
+        | uint64_t(color.r << 24) 
+        | uint64_t(color.g << 16) 
+        | uint64_t(color.b << 8)
+        | uint64_t(0);
+    imageAtomicMin(colorBuffer, screen_pos, depthAndColor);
+}

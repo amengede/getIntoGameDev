@@ -1,0 +1,159 @@
+#version 450
+#extension GL_EXT_shader_image_int64 : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+struct Vertex {
+    vec3 position;
+    float padding1;
+    vec3 color;
+    float padding2;
+};
+
+const float aspect = 4.0 / 3.0;
+const float near = 0.1;
+const float far = 100.0;
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout (set = 0, binding = 0, r64ui) uniform u64image2D colorBuffer;
+layout (std140, set = 1, binding = 0) readonly buffer vertexBuffer {
+    Vertex vertices[];
+};
+layout (set = 1, binding = 1) uniform UBO {
+    mat4 proj;
+    ivec4 triCount;
+};
+
+float signed_area(vec3 a, vec3 b, vec3 c) {
+    vec3 ab = b - a;
+    vec3 ac = c - a;
+
+    return ab.x * ac.y - ab.y * ac.x;
+}
+
+float edge_function(vec3 a, vec3 b, vec2 p) {
+    vec3 ab = b - a;
+    vec2 ap = p - a.xy;
+    return ab.x * ap.y - ab.y * ap.x;
+}
+
+vec3 get_ndc_coordinate(vec3 world_pos) {
+
+    //float z = (world_pos.z - near) / (far - near);
+    vec4 ndc_pos = proj * vec4(world_pos, 1.0);
+
+    //perspective division
+    return vec3((1.0 / ndc_pos.w) * ndc_pos.xyz);
+}
+
+vec3 get_screen_coordinate(vec3 ndc_pos, vec2 screen_size) {
+
+    vec2 screen_pos = screen_size * (vec2(1.0) + ndc_pos.xy);
+
+    return vec3(screen_pos, ndc_pos.z);
+}
+
+void main() {
+
+    int index = int(gl_GlobalInvocationID.x);
+    int screen_height = int(imageSize(colorBuffer).y);
+    vec2 screen_size = 0.5 * vec2(imageSize(colorBuffer));
+
+    if (index >= triCount.x) {
+        return;
+    }
+    
+    int triangle_index = 3 * index;
+
+    Vertex vertex_a = vertices[triangle_index];
+    Vertex vertex_b = vertices[triangle_index + 1];
+    Vertex vertex_c = vertices[triangle_index + 2];
+
+    vec3 pos_a = vertex_a.position;
+    vec3 pos_b = vertex_b.position;
+    vec3 pos_c = vertex_c.position;
+
+    //normal
+    vec3 edge_ab = normalize(pos_b - pos_a);
+    vec3 edge_ac = normalize(pos_c - pos_a);
+    vec3 viewer_dir = normalize(vec3(0.0, 0.0, 0.0) - pos_a);
+    vec3 normal = normalize(cross(edge_ab, edge_ac));
+    if (dot(viewer_dir, normal) <= 0) {
+        return;
+    }
+
+    //lighting
+    vec3 sun_dir = normalize(vec3(1.0, -1.0, -1.0));
+    float strength = dot(sun_dir, normal);
+
+    pos_a = get_ndc_coordinate(pos_a);
+    pos_a = get_screen_coordinate(pos_a, screen_size);
+    vec3 color_a = strength * vertex_a.color;
+
+    pos_b = get_ndc_coordinate(vertex_b.position);
+    pos_b = get_screen_coordinate(pos_b, screen_size);
+    vec3 color_b = strength * vertex_b.color;
+
+    pos_c = get_ndc_coordinate(vertex_c.position);
+    pos_c = get_screen_coordinate(pos_c, screen_size);
+    vec3 color_c = strength * vertex_c.color;
+
+    float area = -signed_area(pos_a, pos_b, pos_c);
+    if (area < 0.0) {
+        return;
+    }
+
+    ivec2 bbox_min = ivec2(min(pos_a.xy, min(pos_b.xy, pos_c.xy)));
+    ivec2 bbox_max = ivec2(max(pos_a.xy, max(pos_b.xy, pos_c.xy))) + ivec2(1, 1);
+
+    for (int x = max(0, bbox_min.x); x <= min(2 * screen_size.x - 1, bbox_max.x); x++) {
+        for (int y = max(0, bbox_min.y); y <= min(2 * screen_size.y - 1, bbox_max.y); y++) {
+
+            vec2 p = vec2(x, y);
+
+            float w2 = -edge_function(pos_a, pos_b, p);
+            if (w2 < 0.0) {
+                continue;
+            }
+
+            float w0 = -edge_function(pos_b, pos_c, p);
+            if (w0 < 0.0) {
+                continue;
+            }
+    
+            float w1 = -edge_function(pos_c, pos_a, p);
+            if (w1 < 0.0) {
+                continue;
+            }
+
+            // weight calculation
+            w0 = w0 / area;
+            w1 = w1 / area;
+            w2 = w2 / area;
+
+            // error correction
+            if (w0 < min(w1, w2)) {
+                w0 = 1.0 - (w1 + w2);
+            }
+            else if (w1 < min(w0, w2)) {
+                w1 = 1.0 - (w0 + w2);
+            }
+            else {
+                w2 = 1.0 - (w0 + w1);
+            }
+
+            float z = w0 * pos_a.z + w1 * pos_b.z + w2 * pos_c.z;
+            if (z < 0.0 || z > 1.0) {
+                continue;
+            }
+            uint depth_value = floatBitsToInt(z);
+
+            uvec3 color = uvec3(255.0 * (w0 * color_a + w1 * color_b + w2 * color_c));
+            uint64_t depthAndColor = (uint64_t(depth_value) << 32) 
+                | uint64_t(color.r << 24) 
+                | uint64_t(color.g << 16) 
+                | uint64_t(color.b << 8)
+                | (0);
+            imageAtomicMin(colorBuffer, ivec2(x, y), depthAndColor);
+        }
+    }
+}
